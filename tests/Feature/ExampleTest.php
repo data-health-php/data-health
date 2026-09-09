@@ -2,38 +2,30 @@
 
 declare(strict_types=1);
 
-use VendorName\Skeleton\Skeleton;
+use DataHealth\DataHealth\DataHealth;
 
 it('resolves the singleton', function () {
-    expect(app(Skeleton::class))->toBeInstanceOf(Skeleton::class);
+    expect(app(DataHealth::class))->toBeInstanceOf(DataHealth::class);
 });
 
 it('returns the same instance from the container', function () {
-    expect(app(Skeleton::class))->toBe(app(Skeleton::class));
+    expect(app(DataHealth::class))->toBe(app(DataHealth::class));
 });
 
-/* @chisel-config */
 it('merges the package config', function () {
-    expect(config('skeleton.placeholder'))->toBe('default');
+    expect(config('data-health.placeholder'))->toBe('default');
 });
-/* @end-chisel-config */
 
-/* @chisel-translations */
 it('loads the package translations', function () {
-    expect(trans('skeleton::messages.placeholder'))->toBe('Skeleton placeholder translation.');
+    expect(trans('data-health::messages.placeholder'))->toBe('DataHealth placeholder translation.');
 });
-/* @end-chisel-translations */
 
-/* @chisel-views */
 it('loads the package views', function () {
-    expect(view()->exists('skeleton::placeholder'))->toBeTrue();
+    expect(view()->exists('data-health::placeholder'))->toBeTrue();
 });
-/* @end-chisel-views */
 
-/* @chisel-commands */
 it('registers the artisan command', function () {
-    $this->artisan('skeleton:placeholder')
-        ->expectsOutputToContain('Skeleton placeholder command executed.')
+    $this->artisan('data-health:placeholder')
+        ->expectsOutputToContain('DataHealth placeholder command executed.')
         ->assertSuccessful();
 });
-/* @end-chisel-commands */
