@@ -1,1 +1,1 @@
-<div>Skeleton placeholder view.</div>
+<div>DataHealth placeholder view.</div>
