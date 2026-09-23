@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 return [
 
-    'placeholder' => 'default',
+    'directories' => [
+        'app/DataHealth' => 'App\\DataHealth\\',
+    ],
 
 ];

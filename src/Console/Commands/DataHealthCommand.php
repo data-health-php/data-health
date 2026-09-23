@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace DataHealth\DataHealth\Console\Commands;
+namespace DataHealth\Console\Commands;
 
 use Illuminate\Console\Command;
 

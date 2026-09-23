@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace DataHealth\DataHealth;
+namespace DataHealth;
 
-use DataHealth\DataHealth\Console\Commands\DataHealthCommand;
+use DataHealth\Console\Commands\DataHealthCommand;
 use Illuminate\Support\ServiceProvider;
 
 class DataHealthServiceProvider extends ServiceProvider
@@ -15,8 +15,6 @@ class DataHealthServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/data-health.php', 'data-health');
-
-        $this->app->singleton(DataHealth::class);
     }
 
     /**
