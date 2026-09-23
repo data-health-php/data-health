@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-namespace DataHealth\DataHealth\Facades;
+namespace DataHealth\Facades;
 
+use DataHealth\DataHealthManager;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see \DataHealth\DataHealth\DataHealth
+ * @see \DataHealth\DataHealth
  */
 class DataHealth extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \DataHealth\DataHealth\DataHealth::class;
+        return DataHealthManager::class;
     }
 }

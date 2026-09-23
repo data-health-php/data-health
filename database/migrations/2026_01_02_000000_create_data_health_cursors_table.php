@@ -10,15 +10,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('data_health_placeholder', function (Blueprint $table) {
+        Schema::create('data_health_cursors', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('key')->unique();
+            $table->unsignedBigInteger('last_id')->nullable();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('data_health_placeholder');
+        Schema::dropIfExists('data_health_cursors');
     }
 };

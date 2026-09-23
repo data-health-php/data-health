@@ -32,12 +32,12 @@
     },
     "autoload": {
         "psr-4": {
-            "DataHealth\\DataHealth\\": "src/"
+            "DataHealth\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "DataHealth\\DataHealth\\Tests\\": "tests/",
+            "DataHealth\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/",
             "Workbench\\Database\\Factories\\": "workbench/database/factories/",
             "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
@@ -87,10 +87,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "DataHealth\\DataHealth\\DataHealthServiceProvider"
+                "DataHealth\\DataHealthServiceProvider"
             ],
             "aliases": {
-                "DataHealth": "DataHealth\\DataHealth\\Facades\\DataHealth"
+                "DataHealth": "DataHealth\\Facades\\DataHealth"
             }
         }
     },
