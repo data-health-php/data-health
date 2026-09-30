@@ -24,6 +24,11 @@ it('reads urgency from the urgency attribute', function () {
         ->and(BasicFinding::getUrgency())->toBeNull();
 });
 
+it('reads worklist from the worklist attribute', function () {
+    expect(UrgentFinding::getWorklist())->toBe('data-quality')
+        ->and(BasicFinding::getWorklist())->toBeNull();
+});
+
 it('passes context through a finding implementation', function () {
     $context = ['reason' => 'duplicate'];
 

@@ -29,7 +29,7 @@ afterEach(function () {
     Carbon::setTestNow();
 });
 
-it('records a newly found issue with status context and urgency', function () {
+it('records a newly found issue with status context urgency and worklist', function () {
     $record = $this->manager->found(new UrgentFinding(
         $this->model,
         ['reason' => 'duplicate'],
@@ -40,13 +40,15 @@ it('records a newly found issue with status context and urgency', function () {
         ->and($record->key)->toBe('UrgentFinding')
         ->and($record->model->is($this->model))->toBeTrue()
         ->and($record->context)->toBe(['reason' => 'duplicate'])
+        ->and($record->worklist)->toBe('data-quality')
         ->and($record->urgency)->toBe(FindingUrgency::SOON);
 });
 
 it('uses normal urgency when the finding has no urgency attribute', function () {
     $record = $this->manager->found(new BasicFinding($this->model));
 
-    expect($record->urgency)->toBe(FindingUrgency::NORMAL);
+    expect($record->urgency)->toBe(FindingUrgency::NORMAL)
+        ->and($record->worklist)->toBeNull();
 });
 
 it('refreshes an existing active record instead of creating a duplicate', function () {

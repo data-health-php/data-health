@@ -71,7 +71,22 @@ The corresponding configuration value is `data-health.scheduler.enabled`.
 
 ## Usage
 
-<!-- Add a basic usage example here. -->
+### Assigning Findings to Worklists
+
+Add the `Worklist` attribute to a finding to save its worklist on newly created finding records:
+
+```php
+use DataHealth\Attributes\Worklist;
+use DataHealth\Finding;
+
+#[Worklist('data-quality')]
+class DuplicateCustomerFinding extends Finding
+{
+    // ...
+}
+```
+
+Findings without the attribute are saved without a worklist.
 
 ## Changelog
 

@@ -6,6 +6,7 @@ namespace DataHealth;
 
 use DataHealth\Attributes\AutoResolve;
 use DataHealth\Attributes\Urgency;
+use DataHealth\Attributes\Worklist;
 use DataHealth\Enums\FindingUrgency;
 use DataHealth\Models\FindingRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -50,6 +51,19 @@ abstract class Finding
         }
 
         return array_first($attribute->getArguments()) ?? null;
+    }
+
+    public static function getWorklist(): ?string
+    {
+        $reflection = new ReflectionClass(static::class);
+
+        $attribute = array_first($reflection->getAttributes(Worklist::class));
+
+        if ($attribute === null) {
+            return null;
+        }
+
+        return $attribute->newInstance()->worklist;
     }
 
     public function isAutomaticallyResolved(): bool

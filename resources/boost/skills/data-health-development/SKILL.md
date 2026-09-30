@@ -36,6 +36,11 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 - set `DATA_HEALTH_SCHEDULER_ENABLED=false` to prevent the package from registering scheduled detection callbacks
 - use `data-health.scheduler.enabled` when overriding the value at runtime or in tests
 
+### 4. Assign findings to worklists
+
+- add `#[DataHealth\Attributes\Worklist('worklist-name')]` to a finding class when newly created records should be assigned to that worklist
+- omit the attribute when the finding should not have a worklist
+
 ## Rules, References, and Templates
 
 Read before executing:
@@ -45,10 +50,17 @@ Read before executing:
 
 ## Example
 
-Disable scheduled detections in a test environment:
+Assign a finding to a worklist:
 
 ```php
-config()->set('data-health.scheduler.enabled', false);
+use DataHealth\Attributes\Worklist;
+use DataHealth\Finding;
+
+#[Worklist('data-quality')]
+class DuplicateCustomerFinding extends Finding
+{
+    // ...
+}
 ```
 
 ## Anti-patterns
