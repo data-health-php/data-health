@@ -11,6 +11,11 @@ use DataHealth\Finding;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property string $key
+ * @property array<array-key, mixed> $context
+ * @property RecordStatus $status
+ */
 class FindingRecord extends Model
 {
     protected $table = 'data_health_findings';

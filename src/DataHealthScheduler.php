@@ -21,6 +21,10 @@ class DataHealthScheduler
 
     public function schedule(): void
     {
+        if (config('data-health.scheduler.enabled', false) !== true) {
+            return;
+        }
+
         foreach ($this->registry->schedulable() as $finding) {
             $this->scheduleFinding($finding);
         }

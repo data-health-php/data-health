@@ -13,7 +13,7 @@ use Illuminate\Support\ServiceProvider;
 it('merges the package configuration', function () {
     expect(config('data-health.directories'))->toBe([
         'app/DataHealth' => 'App\\DataHealth\\',
-    ]);
+    ])->and(config('data-health.scheduler.enabled'))->toBeTrue();
 });
 
 it('loads package translations and views', function () {

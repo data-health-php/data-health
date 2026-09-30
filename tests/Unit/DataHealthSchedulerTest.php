@@ -14,6 +14,20 @@ beforeEach(function () {
     ScheduledFinding::$detected = false;
 });
 
+it('does not register detections when scheduling is disabled', function () {
+    config()->set('data-health.scheduler.enabled', false);
+
+    $schedule = app(Schedule::class);
+    $eventCount = count($schedule->events());
+
+    (new DataHealthScheduler(
+        new SchedulerFindingRegistry([ScheduledFinding::class]),
+        $schedule,
+    ))->schedule();
+
+    expect($schedule->events())->toHaveCount($eventCount);
+});
+
 it('schedules detectable findings using their cron expression', function () {
     $schedule = app(Schedule::class);
     $eventCount = count($schedule->events());

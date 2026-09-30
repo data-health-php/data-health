@@ -17,25 +17,41 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 
 ## Workflow
 
-### 1. Inspect the Laravel app context
+### 1. Install and publish the package
 
-- confirm the app is a Laravel project
-- inspect the target code paths where the package should be applied
+- install `23m/data-health` with Composer
+- publish migrations with `php artisan vendor:publish --tag="data-health-migrations"`
+- run `php artisan migrate`
+- publish configuration with `php artisan vendor:publish --tag="data-health-config"` when application-level overrides are needed
 
-### 2. Apply the package's public API
+### 2. Configure detection discovery
 
-Document how to integrate Data Health here, replacing this placeholder with the integration steps for your package.
+- register finding directories and their namespaces in `config/data-health.php` under `directories`
+- keep directory paths relative to the Laravel application's base path
+- keep namespace prefixes terminated with a namespace separator
+
+### 3. Configure scheduled detections
+
+- scheduled detections are enabled by default
+- set `DATA_HEALTH_SCHEDULER_ENABLED=false` to prevent the package from registering scheduled detection callbacks
+- use `data-health.scheduler.enabled` when overriding the value at runtime or in tests
 
 ## Rules, References, and Templates
 
 Read before executing:
 
-- no additional resource files for this skill
+- `config/data-health.php`
+- package `README.md`
 
-## Examples
+## Example
 
-- describe a representative integration scenario for Data Health
+Disable scheduled detections in a test environment:
+
+```php
+config()->set('data-health.scheduler.enabled', false);
+```
 
 ## Anti-patterns
 
 - do not document package internals here; keep the skill focused on adoption in Laravel apps
+- do not disable Laravel's scheduler globally when only Data Health detections need to be paused

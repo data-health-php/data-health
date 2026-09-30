@@ -59,6 +59,16 @@ php artisan vendor:publish --tag="data-health-lang"
 php artisan vendor:publish --tag="data-health-assets"
 ```
 
+## Configuration
+
+Scheduled detections are enabled by default. To prevent Data Health from registering its scheduled detections, set the following environment variable:
+
+```dotenv
+DATA_HEALTH_SCHEDULER_ENABLED=false
+```
+
+The corresponding configuration value is `data-health.scheduler.enabled`.
+
 ## Usage
 
 <!-- Add a basic usage example here. -->
