@@ -45,6 +45,7 @@ class DataHealthManager
                 'model_type' => $finding->model->getMorphClass(),
                 'model_id' => $finding->model->getKey(),
                 'context' => $finding->buildContext(),
+                'worklist' => $finding::getWorklist(),
                 'urgency' => $finding::getUrgency() ?? FindingUrgency::NORMAL,
             ]);
 

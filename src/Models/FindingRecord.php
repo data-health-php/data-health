@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $key
  * @property array<array-key, mixed> $context
  * @property RecordStatus $status
+ * @property string|null $worklist
  */
 class FindingRecord extends Model
 {
@@ -27,6 +28,7 @@ class FindingRecord extends Model
         'model_id',
         'role',
         'context',
+        'worklist',
         'updated_at',
         'urgency',
     ];

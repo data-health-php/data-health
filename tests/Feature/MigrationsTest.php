@@ -18,6 +18,7 @@ it('creates and rolls back the package tables', function () {
         'model_type',
         'model_id',
         'context',
+        'worklist',
         'urgency',
         'created_at',
         'updated_at',
