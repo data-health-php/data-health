@@ -13,11 +13,13 @@ use ReflectionClass;
 
 abstract class Finding
 {
+    /** @param array<array-key, mixed> $context */
     public function __construct(
         public readonly Model $model,
         public readonly array $context = [],
     ) {}
 
+    /** @return array<array-key, mixed> */
     public function buildContext(): array
     {
         return [];
@@ -30,7 +32,9 @@ abstract class Finding
 
     public static function found(mixed ...$args): FindingRecord
     {
-        return app(DataHealthManager::class)->found(new static(...$args));
+        $finding = (new ReflectionClass(static::class))->newInstanceArgs($args);
+
+        return app(DataHealthManager::class)->found($finding);
     }
 
     public static function getUrgency(): ?FindingUrgency
@@ -54,6 +58,6 @@ abstract class Finding
 
         $attributes = $reflection->getAttributes(AutoResolve::class);
 
-        return !empty($attributes);
+        return ! empty($attributes);
     }
 }

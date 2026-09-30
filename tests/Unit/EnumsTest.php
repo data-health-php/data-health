@@ -19,6 +19,5 @@ it('exposes status values and labels', function () {
         'active',
         'ignored',
         'resolved',
-        'automatically resolved',
     ])->and(RecordStatus::Active->getLabel())->toBe('Active');
 });

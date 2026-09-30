@@ -7,10 +7,17 @@ namespace DataHealth;
 use DataHealth\Models\DataHealthCursor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 class DataHealthCheckCursor
 {
-    /** @param class-string<Finding> $check */
+    /**
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $query
+     * @param  class-string<Finding>  $check
+     * @return Collection<int, Model>
+     */
     public function next(Builder $query, string $check, int $limit): Collection
     {
         $cursor = DataHealthCursor::firstOrCreate(
@@ -38,9 +45,10 @@ class DataHealthCheckCursor
             'last_id' => $lastId === $overallLastId ? 0 : $lastId,
         ]);
 
-        return (clone $query)
-            ->whereIn('id', $ids)
-            ->orderBy('id')
-            ->get();
+        $resultQuery = clone $query;
+        $resultQuery->whereKey($ids);
+        $resultQuery->orderBy('id');
+
+        return $resultQuery->get();
     }
 }

@@ -23,7 +23,7 @@ class FindingRegistry
         return $this->fails;
     }
 
-    /** @return Collection<string, class-string<Finding>> */
+    /** @return Collection<string, class-string<Finding&CanDetect>> */
     public function detectable(): Collection
     {
         $this->bootIfNotBooted();
@@ -31,22 +31,21 @@ class FindingRegistry
         return $this->fails->filter(fn (string $class) => is_a($class, CanDetect::class, true));
     }
 
-    /** @return Collection<string, class-string<Finding>> */
+    /** @return Collection<string, class-string<Finding&CanDetect>> */
     public function schedulable(): Collection
     {
         $this->bootIfNotBooted();
 
-        return $this->detectable()->filter(function (string $class) {
-            //            dd(!empty(new \ReflectionClass($class)->getAttributes(Scheduled::class)));
-            return ! empty(new ReflectionClass($class)->getAttributes(Scheduled::class));
-        });
+        return $this->detectable()->filter(
+            fn (string $class) => ! empty(new ReflectionClass($class)->getAttributes(Scheduled::class)),
+        );
     }
 
     public function getKey(string $keyOrClass): string
     {
         $this->bootIfNotBooted();
 
-        [$key] = $this->getKeyAndClass($keyOrClass); // @phpstan-ignore-line
+        [$key] = $this->getKeyAndClass($keyOrClass);
 
         return $key;
     }
@@ -56,22 +55,28 @@ class FindingRegistry
     {
         $this->bootIfNotBooted();
 
-        [, $class] = $this->getKeyAndClass($keyOrClass); // @phpstan-ignore-line
+        [, $class] = $this->getKeyAndClass($keyOrClass);
 
         return $class;
     }
 
-    /** @return array<string, class-string<Finding>> */
+    /** @return array{string, class-string<Finding>} */
     public function getKeyAndClass(string $keyOrClass): array
     {
         $this->bootIfNotBooted();
 
-        if ($this->fails->contains($keyOrClass)) {
-            return [$this->fails->search($keyOrClass), $keyOrClass]; // @phpstan-ignore-line
+        foreach ($this->fails as $key => $class) {
+            if ($class === $keyOrClass) {
+                return [$key, $class];
+            }
         }
 
         if ($this->fails->has($keyOrClass)) {
-            return [$keyOrClass, $this->fails->get($keyOrClass)]; // @phpstan-ignore-line
+            $class = $this->fails->get($keyOrClass);
+
+            if ($class !== null) {
+                return [$keyOrClass, $class];
+            }
         }
 
         throw new RuntimeException("Fail with key or class {$keyOrClass} not found");
@@ -95,7 +100,7 @@ class FindingRegistry
                 throw new RuntimeException('Failed to read directory: '.$dir);
             }
 
-            /** @var Collection<string, class-string<Finding>> $fails */
+            /** @var Collection<string, class-string<Finding>> $failsInDir */
             $failsInDir = collect($files)
                 ->map(fn (string $path) => $namespace.pathinfo($path, PATHINFO_FILENAME))
                 ->mapWithKeys(fn (string $class) => [str($class)->afterLast('\\')->toString() => $class]);

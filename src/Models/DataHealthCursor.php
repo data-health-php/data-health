@@ -6,6 +6,9 @@ namespace DataHealth\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int|null $last_id
+ */
 class DataHealthCursor extends Model
 {
     protected $fillable = [

@@ -49,9 +49,7 @@ class DataHealthManager
             ]);
 
             if ($finding->isAutomaticallyResolved()) {
-                if ($this->resolve($record)) {
-                    $record->update(['status' => RecordStatus::Resolved]);
-                };
+                $this->resolve($record);
             }
 
             return $record;
@@ -86,7 +84,7 @@ class DataHealthManager
         $result = match (true) {
             is_bool($response) => $response,
             is_callable($response) => app()->call($response),
-            is_string($response) && is_a($response, Resolver::class, true) => app()->make($response)->resolve($record),
+            is_a($response, Resolver::class, true) => app()->make($response)->resolve($record),
             default => throw new RuntimeException($finding::class.' does not implement Resolver'),
         };
 
@@ -110,7 +108,7 @@ class DataHealthManager
         $result = match (true) {
             is_bool($response) => $response,
             is_callable($response) => app()->call($response),
-            is_string($response) && is_a($response, Verifier::class, true) => app()->make($response)->verify($record),
+            is_a($response, Verifier::class, true) => app()->make($response)->verify($record),
             default => throw new RuntimeException($finding::class.' does not implement Verifier'),
         };
 

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('key');
             $table->morphs('model');
             $table->json('context');
+            $table->nullableMorphs('assignee');
             $table->string('urgency');
             $table->timestamps();
         });
