@@ -16,10 +16,16 @@ return new class extends Migration
             $table->string('key');
             $table->morphs('model');
             $table->json('context');
+            $table->char('context_hash', 64);
             $table->nullableMorphs('assignee');
             $table->string('worklist')->nullable();
             $table->string('urgency');
             $table->timestamps();
+
+            $table->unique(
+                ['key', 'model_type', 'model_id', 'context_hash'],
+                'data_health_findings_identity_unique',
+            );
         });
     }
 
