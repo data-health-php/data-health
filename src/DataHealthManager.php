@@ -38,7 +38,7 @@ class DataHealthManager
 
         $record = FindingRecord::query()->firstOrCreate(
             [
-                'key' => $finding->key(),
+                'key' => $finding::key(),
                 'model_type' => $finding->model->getMorphClass(),
                 'model_id' => $finding->model->getKey(),
                 'context_hash' => $this->contextHasher->hash($context),

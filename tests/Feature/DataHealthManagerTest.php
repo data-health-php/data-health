@@ -11,6 +11,7 @@ use DataHealth\Models\FindingRecord;
 use DataHealth\Tests\Fixtures\DataHealth\ActionableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyResolvedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
+use DataHealth\Tests\Fixtures\DataHealth\KeyedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\UrgentFinding;
 use DataHealth\Tests\Fixtures\Models\TestModel;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -45,6 +46,13 @@ it('records a newly found issue with status context urgency and worklist', funct
         ->and($record->context_hash)->toBe(hash('sha256', '{"reason":"duplicate"}'))
         ->and($record->worklist)->toBe('data-quality')
         ->and($record->urgency)->toBe(FindingUrgency::SOON);
+});
+
+it('uses an explicit finding key in the database and registry', function () {
+    $record = $this->manager->found(new KeyedFinding($this->model));
+
+    expect($record->key)->toBe('duplicate-customer')
+        ->and($this->manager->getFindingForRecord($record))->toBeInstanceOf(KeyedFinding::class);
 });
 
 it('treats object key order as the same context', function () {

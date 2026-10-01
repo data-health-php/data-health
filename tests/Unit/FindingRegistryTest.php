@@ -7,6 +7,7 @@ use DataHealth\Tests\Fixtures\DataHealth\ActionableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyResolvedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
 use DataHealth\Tests\Fixtures\DataHealth\DetectableFinding;
+use DataHealth\Tests\Fixtures\DataHealth\KeyedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\ScheduledFinding;
 use DataHealth\Tests\Fixtures\DataHealth\UrgentFinding;
 
@@ -16,12 +17,13 @@ beforeEach(function () {
     ]);
 });
 
-it('discovers findings using their filenames as keys', function () {
+it('discovers findings using their default or explicit keys', function () {
     expect((new FindingRegistry)->all()->all())->toBe([
         'ActionableFinding' => ActionableFinding::class,
         'AutomaticallyResolvedFinding' => AutomaticallyResolvedFinding::class,
         'BasicFinding' => BasicFinding::class,
         'DetectableFinding' => DetectableFinding::class,
+        'duplicate-customer' => KeyedFinding::class,
         'ScheduledFinding' => ScheduledFinding::class,
         'UrgentFinding' => UrgentFinding::class,
     ]);
@@ -48,7 +50,9 @@ it('looks up keys and classes in either direction', function () {
         ->and($registry->getKeyAndClass('ScheduledFinding'))->toBe([
             'ScheduledFinding',
             ScheduledFinding::class,
-        ]);
+        ])
+        ->and($registry->getKey(KeyedFinding::class))->toBe('duplicate-customer')
+        ->and($registry->getClass('duplicate-customer'))->toBe(KeyedFinding::class);
 });
 
 it('rejects unknown finding keys and classes', function () {

@@ -7,11 +7,16 @@ use DataHealth\Tests\Fixtures\DataHealth\ActionableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyResolvedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
 use DataHealth\Tests\Fixtures\DataHealth\DetectableFinding;
+use DataHealth\Tests\Fixtures\DataHealth\KeyedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\UrgentFinding;
 use DataHealth\Tests\Fixtures\Models\TestModel;
 
 it('derives its key from the class name', function () {
-    expect((new BasicFinding(new TestModel))->key())->toBe('BasicFinding');
+    expect(BasicFinding::key())->toBe('BasicFinding');
+});
+
+it('uses the key attribute when present', function () {
+    expect(KeyedFinding::key())->toBe('duplicate-customer');
 });
 
 it('uses empty context by default', function () {

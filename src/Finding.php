@@ -6,6 +6,7 @@ namespace DataHealth;
 
 use DataHealth\Attributes\AutoResolve;
 use DataHealth\Attributes\Description;
+use DataHealth\Attributes\Key;
 use DataHealth\Attributes\Urgency;
 use DataHealth\Attributes\Worklist;
 use DataHealth\Enums\FindingUrgency;
@@ -27,9 +28,10 @@ abstract class Finding
         return [];
     }
 
-    public function key(): string
+    public static function key(): string
     {
-        return str(static::class)->afterLast('\\')->toString();
+        return self::classAttribute(Key::class)->key
+            ?? str(static::class)->afterLast('\\')->toString();
     }
 
     public static function found(mixed ...$args): FindingRecord
