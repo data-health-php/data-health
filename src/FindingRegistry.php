@@ -103,7 +103,7 @@ class FindingRegistry
             /** @var Collection<string, class-string<Finding>> $failsInDir */
             $failsInDir = collect($files)
                 ->map(fn (string $path) => $namespace.pathinfo($path, PATHINFO_FILENAME))
-                ->mapWithKeys(fn (string $class) => [str($class)->afterLast('\\')->toString() => $class]);
+                ->mapWithKeys(fn (string $class) => [$class::key() => $class]);
 
             $this->fails = $this->fails->merge($failsInDir);
         }

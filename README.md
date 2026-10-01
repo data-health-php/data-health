@@ -73,6 +73,23 @@ Scheduled detections are named, prevented from overlapping, and limited to one s
 
 ## Usage
 
+### Defining a Stable Finding Key
+
+Add the `Key` attribute to use an explicit value as the finding's database key:
+
+```php
+use DataHealth\Attributes\Key;
+use DataHealth\Finding;
+
+#[Key('duplicate-customer')]
+class DuplicateCustomerFinding extends Finding
+{
+    // ...
+}
+```
+
+Findings without the attribute continue to use their class basename, such as `DuplicateCustomerFinding`.
+
 ### Describing Findings and Their Actions
 
 Use the `Description` attribute on a finding class and on its `detect`, `verify`, or `resolve` methods to provide user-facing explanations:

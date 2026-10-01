@@ -46,12 +46,17 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 - ensure a queue worker is running before enabling asynchronous detections
 - keep a lock-capable shared cache configured so only one queued or running detection exists per finding class
 
-### 5. Assign findings to worklists
+### 5. Define stable finding keys
+
+- add `#[DataHealth\Attributes\Key('stable-key')]` to a finding class when its persisted database key should not depend on the class basename
+- omit the attribute to keep using the finding class basename as the database key
+
+### 6. Assign findings to worklists
 
 - add `#[DataHealth\Attributes\Worklist('worklist-name')]` to a finding class when newly created records should be assigned to that worklist
 - omit the attribute when the finding should not have a worklist
 
-### 6. Describe findings and actions
+### 7. Describe findings and actions
 
 - add `#[DataHealth\Attributes\Description('...')]` to a finding class to explain what the finding means in a user interface
 - add the same attribute to `detect`, `verify`, and `resolve` methods to explain what each operation does
@@ -100,6 +105,19 @@ class DuplicateCustomerFinding extends Finding
 }
 ```
 
+Define a stable database key:
+
+```php
+use DataHealth\Attributes\Key;
+use DataHealth\Finding;
+
+#[Key('duplicate-customer')]
+class DuplicateCustomerFinding extends Finding
+{
+    // ...
+}
+```
+
 Describe a finding and its detection:
 
 ```php
@@ -124,4 +142,5 @@ class DuplicateCustomerFinding extends Finding implements CanDetect
 - do not disable Laravel's scheduler globally when only Data Health detections need to be paused
 - do not use per-server cache storage for scheduler locks in a multi-server deployment
 - do not add `Async` without operating a worker for its selected queue and connection
+- do not rename an explicit finding key after records have been persisted unless those records are migrated too
 - do not use method descriptions as execution logic; they are optional user-facing metadata
