@@ -5,6 +5,7 @@ declare(strict_types=1);
 use DataHealth\Console\Commands\DataHealthCommand;
 use DataHealth\DataHealthCheckCursor;
 use DataHealth\DataHealthManager;
+use DataHealth\DataHealthScheduler;
 use DataHealth\DataHealthServiceProvider;
 use DataHealth\Facades\CheckCursor;
 use DataHealth\Facades\DataHealth;
@@ -34,6 +35,16 @@ it('registers the package command', function () {
 it('resolves package services through their facades', function () {
     expect(DataHealth::getFacadeRoot())->toBeInstanceOf(DataHealthManager::class)
         ->and(CheckCursor::getFacadeRoot())->toBeInstanceOf(DataHealthCheckCursor::class);
+});
+
+it('registers scheduled detections when routes are cached', function () {
+    $scheduler = Mockery::mock(DataHealthScheduler::class);
+    $scheduler->expects('schedule')->once();
+
+    app()->instance('routes.cached', true);
+    app()->instance(DataHealthScheduler::class, $scheduler);
+
+    (new DataHealthServiceProvider(app()))->boot();
 });
 
 it('registers each documented publish group', function (string $tag) {

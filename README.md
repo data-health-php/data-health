@@ -69,6 +69,8 @@ DATA_HEALTH_SCHEDULER_ENABLED=false
 
 The corresponding configuration value is `data-health.scheduler.enabled`.
 
+Scheduled detections are named, prevented from overlapping, and limited to one scheduler server per cron occurrence. Multi-server deployments must use a shared `database`, `memcached`, `dynamodb`, or `redis` cache store so Laravel can coordinate these locks across servers.
+
 ## Usage
 
 ### Assigning Findings to Worklists

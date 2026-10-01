@@ -40,7 +40,10 @@ it('schedules detectable findings using their cron expression', function () {
     $events = $schedule->events();
     $event = $events[$eventCount];
 
-    expect($event->expression)->toBe('15 * * * *');
+    expect($event->expression)->toBe('15 * * * *')
+        ->and($event->description)->toBe('data-health:detect:'.ScheduledFinding::class)
+        ->and($event->withoutOverlapping)->toBeTrue()
+        ->and($event->onOneServer)->toBeTrue();
 
     $event->run($this->app);
 
