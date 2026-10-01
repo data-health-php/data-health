@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace DataHealth;
 
 use Cron\CronExpression;
+use DataHealth\Attributes\Async;
 use DataHealth\Attributes\Scheduled;
 use DataHealth\Contracts\CanDetect;
+use DataHealth\Jobs\DetectFinding;
 use Illuminate\Console\Scheduling\Schedule;
 use InvalidArgumentException;
 use LogicException;
@@ -38,13 +40,30 @@ class DataHealthScheduler
         }
 
         $expression = $this->cronExpression($finding);
+        $async = $this->async($finding);
 
-        $this->schedule
-            ->call($finding::detect(...))
+        $event = $async === null
+            ? $this->schedule->call($finding::detect(...))
+            : $this->schedule->job(
+                new DetectFinding($finding),
+                $async->queue,
+                $async->connection,
+            );
+
+        $event
             ->name('data-health:detect:'.$finding)
             ->cron($expression)
             ->withoutOverlapping()
             ->onOneServer();
+    }
+
+    /** @param class-string<Finding> $finding */
+    private function async(string $finding): ?Async
+    {
+        $attribute = (new ReflectionClass($finding))
+            ->getAttributes(Async::class)[0] ?? null;
+
+        return $attribute?->newInstance();
     }
 
     /** @param class-string<Finding> $finding */
