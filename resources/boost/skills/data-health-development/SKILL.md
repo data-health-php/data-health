@@ -51,6 +51,14 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 - add `#[DataHealth\Attributes\Worklist('worklist-name')]` to a finding class when newly created records should be assigned to that worklist
 - omit the attribute when the finding should not have a worklist
 
+### 6. Describe findings and actions
+
+- add `#[DataHealth\Attributes\Description('...')]` to a finding class to explain what the finding means in a user interface
+- add the same attribute to `detect`, `verify`, and `resolve` methods to explain what each operation does
+- read class descriptions with `FindingClass::getDescription()`
+- read action descriptions with `FindingClass::getMethodDescription('detect')`, substituting `verify` or `resolve` as needed
+- handle `null` when the class, method, or method description is absent
+
 ## Rules, References, and Templates
 
 Read before executing:
@@ -92,9 +100,28 @@ class DuplicateCustomerFinding extends Finding
 }
 ```
 
+Describe a finding and its detection:
+
+```php
+use DataHealth\Attributes\Description;
+use DataHealth\Contracts\CanDetect;
+use DataHealth\Finding;
+
+#[Description('The customer appears more than once with the same email address.')]
+class DuplicateCustomerFinding extends Finding implements CanDetect
+{
+    #[Description('Searches customer records for duplicate email addresses.')]
+    public static function detect(): int
+    {
+        return 0;
+    }
+}
+```
+
 ## Anti-patterns
 
 - do not document package internals here; keep the skill focused on adoption in Laravel apps
 - do not disable Laravel's scheduler globally when only Data Health detections need to be paused
 - do not use per-server cache storage for scheduler locks in a multi-server deployment
 - do not add `Async` without operating a worker for its selected queue and connection
+- do not use method descriptions as execution logic; they are optional user-facing metadata
