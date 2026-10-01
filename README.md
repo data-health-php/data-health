@@ -76,6 +76,17 @@ The corresponding configuration value is `data-health.scheduler.enabled`.
 
 Scheduled detections are named, prevented from overlapping, and limited to one scheduler server per cron occurrence. Multi-server deployments must use a shared `database`, `memcached`, `dynamodb`, or `redis` cache store so Laravel can coordinate these locks across servers.
 
+Automatic cleanup of findings linked to deleted models is disabled by default. Enable it to register
+one wildcard Eloquent model listener:
+
+```dotenv
+DATA_HEALTH_AUTO_DELETE_ENABLED=true
+```
+
+The corresponding configuration value is `data-health.auto_delete.enabled`. When disabled, Data
+Health does not register the wildcard listener and adds no work to model deletion events. When
+enabled, each Eloquent model deletion runs a query that removes matching finding records.
+
 ## Usage
 
 ### Defining a Stable Finding Key
@@ -172,6 +183,26 @@ class DuplicateCustomerFinding extends Finding
 ```
 
 Findings without the attribute are saved without a worklist.
+
+### Cleaning Up Findings for Deleted Models
+
+Enable `DATA_HEALTH_AUTO_DELETE_ENABLED` to clean up finding records automatically for every
+Eloquent model. Alternatively, use the `HasFindingRecords` concern for opt-in cleanup on specific
+model types. It also adds a `findingRecords` relationship:
+
+```php
+use DataHealth\Concerns\HasFindingRecords;
+use Illuminate\Database\Eloquent\Model;
+
+class Customer extends Model
+{
+    use HasFindingRecords;
+}
+```
+
+Both cleanup modes follow Eloquent model events, including soft deletes. Restored models need to be
+checked again to recreate applicable findings. Mass deletes do not dispatch model events, so delete
+models individually when finding cleanup is required.
 
 ## Changelog
 

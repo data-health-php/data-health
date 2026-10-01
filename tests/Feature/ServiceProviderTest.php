@@ -14,7 +14,13 @@ use Illuminate\Support\ServiceProvider;
 it('merges the package configuration', function () {
     expect(config('data-health.directories'))->toBe([
         'app/DataHealth' => 'App\\DataHealth\\',
-    ])->and(config('data-health.scheduler.enabled'))->toBeTrue();
+    ])->and(config('data-health.scheduler.enabled'))->toBeTrue()
+        ->and(config('data-health.auto_delete.enabled'))->toBeFalse();
+});
+
+it('does not register a wildcard model listener when auto delete is disabled', function () {
+    expect(app('events')->hasWildcardListeners('eloquent.deleted: App\\Models\\Customer'))
+        ->toBeFalse();
 });
 
 it('loads package translations and views', function () {

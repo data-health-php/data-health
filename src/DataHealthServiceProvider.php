@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace DataHealth;
 
 use DataHealth\Console\Commands\DataHealthCommand;
+use DataHealth\Listeners\DeleteFindingRecordsForDeletedModel;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\ServiceProvider;
 
 class DataHealthServiceProvider extends ServiceProvider
@@ -27,6 +29,13 @@ class DataHealthServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'data-health');
 
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'data-health');
+
+        if (config('data-health.auto_delete.enabled')) {
+            $this->app->make(Dispatcher::class)->listen(
+                'eloquent.deleted: *',
+                DeleteFindingRecordsForDeletedModel::class,
+            );
+        }
 
         if (! $this->app->runningInConsole()) {
             return;
