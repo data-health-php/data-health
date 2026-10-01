@@ -29,6 +29,8 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 - register finding directories and their namespaces in `config/data-health.php` under `directories`
 - keep directory paths relative to the Laravel application's base path
 - keep namespace prefixes terminated with a namespace separator
+- place findings in any nested directory that follows the configured PSR-4 namespace structure
+- only concrete classes extending `DataHealth\Finding` are registered; other PHP classes are ignored
 
 ### 3. Configure scheduled detections
 

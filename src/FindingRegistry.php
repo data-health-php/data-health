@@ -6,9 +6,13 @@ namespace DataHealth;
 
 use DataHealth\Attributes\Scheduled;
 use DataHealth\Contracts\CanDetect;
+use FilesystemIterator;
 use Illuminate\Support\Collection;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use ReflectionClass;
 use RuntimeException;
+use SplFileInfo;
 
 class FindingRegistry
 {
@@ -94,18 +98,52 @@ class FindingRegistry
         $this->fails = collect();
 
         foreach (config('data-health.directories') as $dir => $namespace) {
-            $files = glob(base_path($dir.'/*.php'));
-
-            if ($files === false) {
-                throw new RuntimeException('Failed to read directory: '.$dir);
-            }
-
-            /** @var Collection<string, class-string<Finding>> $failsInDir */
-            $failsInDir = collect($files)
-                ->map(fn (string $path) => $namespace.pathinfo($path, PATHINFO_FILENAME))
-                ->mapWithKeys(fn (string $class) => [$class::key() => $class]);
-
-            $this->fails = $this->fails->merge($failsInDir);
+            $this->fails = $this->fails->merge($this->discover($dir, $namespace));
         }
+    }
+
+    /** @return Collection<string, class-string<Finding>> */
+    private function discover(string $configuredDirectory, string $namespace): Collection
+    {
+        $directory = realpath(base_path($configuredDirectory));
+
+        if ($directory === false || ! is_dir($directory)) {
+            /** @var Collection<string, class-string<Finding>> $findings */
+            $findings = collect();
+
+            return $findings;
+        }
+
+        if (! is_readable($directory)) {
+            throw new RuntimeException('Finding directory is not readable: '.$configuredDirectory);
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+        );
+
+        /** @var Collection<int, SplFileInfo> $files */
+        $files = collect(iterator_to_array($iterator, false));
+
+        /** @var Collection<string, class-string<Finding>> $findings */
+        $findings = $files
+            ->filter(fn (SplFileInfo $file) => $file->isFile() && $file->getExtension() === 'php')
+            ->sortBy(fn (SplFileInfo $file) => $file->getPathname(), SORT_STRING)
+            ->map(function (SplFileInfo $file) use ($directory, $namespace): string {
+                $relativePath = substr($file->getPathname(), strlen($directory) + 1, -4);
+                $relativeClass = str_replace(['/', '\\'], '\\', $relativePath);
+
+                return rtrim($namespace, '\\').'\\'.$relativeClass;
+            })
+            ->filter(function (string $class): bool {
+                if (! class_exists($class) || ! is_subclass_of($class, Finding::class)) {
+                    return false;
+                }
+
+                return ! (new ReflectionClass($class))->isAbstract();
+            })
+            ->mapWithKeys(fn (string $class) => [$class::key() => $class]);
+
+        return $findings;
     }
 }

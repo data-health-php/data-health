@@ -6,9 +6,11 @@ use DataHealth\FindingRegistry;
 use DataHealth\Tests\Fixtures\DataHealth\ActionableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyResolvedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
+use DataHealth\Tests\Fixtures\DataHealth\Customers\NestedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\DetectableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\KeyedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\ScheduledFinding;
+use DataHealth\Tests\Fixtures\DataHealth\Support\Helper;
 use DataHealth\Tests\Fixtures\DataHealth\UrgentFinding;
 
 beforeEach(function () {
@@ -22,11 +24,17 @@ it('discovers findings using their default or explicit keys', function () {
         'ActionableFinding' => ActionableFinding::class,
         'AutomaticallyResolvedFinding' => AutomaticallyResolvedFinding::class,
         'BasicFinding' => BasicFinding::class,
+        'NestedFinding' => NestedFinding::class,
         'DetectableFinding' => DetectableFinding::class,
         'duplicate-customer' => KeyedFinding::class,
         'ScheduledFinding' => ScheduledFinding::class,
         'UrgentFinding' => UrgentFinding::class,
     ]);
+});
+
+it('ignores discovered classes that are not findings', function () {
+    expect((new FindingRegistry)->all())
+        ->not->toContain(Helper::class);
 });
 
 it('returns only detectable findings', function () {

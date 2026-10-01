@@ -61,6 +61,11 @@ php artisan vendor:publish --tag="data-health-assets"
 
 ## Configuration
 
+Finding directories are scanned recursively. Each configured namespace is combined with a PHP
+file's relative path, so `app/DataHealth/Customers/DuplicateCustomerFinding.php` is discovered as
+`App\DataHealth\Customers\DuplicateCustomerFinding`. Only concrete classes extending `Finding`
+are registered; other PHP classes in a configured directory are ignored.
+
 Scheduled detections are enabled by default. To prevent Data Health from registering its scheduled detections, set the following environment variable:
 
 ```dotenv
