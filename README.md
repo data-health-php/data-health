@@ -26,7 +26,7 @@ You may publish all of the package's resources at once:
 php artisan vendor:publish --tag="data-health"
 ```
 
-Or, you may publish each resource individually:
+Or, you may publish the package resources individually:
 
 ### Publishing the Configuration File
 
@@ -39,24 +39,6 @@ php artisan vendor:publish --tag="data-health-config"
 ```bash
 php artisan vendor:publish --tag="data-health-migrations"
 php artisan migrate
-```
-
-### Publishing the Views
-
-```bash
-php artisan vendor:publish --tag="data-health-views"
-```
-
-### Publishing the Translations
-
-```bash
-php artisan vendor:publish --tag="data-health-lang"
-```
-
-### Publishing the Public Assets
-
-```bash
-php artisan vendor:publish --tag="data-health-assets"
 ```
 
 ## Configuration

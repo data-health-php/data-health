@@ -6,6 +6,5 @@ parameters:
         - src
         - config
         - database
-        - routes
         - tests/Fixtures/Models/TestModel.php
     tmpDir: build/phpstan

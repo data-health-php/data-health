@@ -16,8 +16,6 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Formatting check: `composer lint:check`
 - Static analysis: `composer analyse`
 - Pest tests: `composer test:unit`
-- Workbench build: `composer build`
-- Workbench server: `composer serve`
 
 ## Local Skills
 
