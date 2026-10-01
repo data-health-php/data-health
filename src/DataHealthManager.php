@@ -15,7 +15,10 @@ use RuntimeException;
 
 class DataHealthManager
 {
-    public function __construct(private FindingRegistry $registry) {}
+    public function __construct(
+        private FindingRegistry $registry,
+        private ContextHasher $contextHasher,
+    ) {}
 
     public function registry(): FindingRegistry
     {
@@ -31,24 +34,24 @@ class DataHealthManager
 
     public function found(Finding $finding): FindingRecord
     {
-        $record = FindingRecord::query()
-            ->where('key', $finding->key())
-            ->where('model_type', $finding->model->getMorphClass())
-            ->where('model_id', $finding->model->getKey())
-            ->whereJsonContains('context', $finding->buildContext())
-            ->first();
+        $context = $finding->buildContext();
 
-        if ($record === null) {
-            $record = FindingRecord::create([
-                'status' => RecordStatus::Active,
+        $record = FindingRecord::query()->firstOrCreate(
+            [
                 'key' => $finding->key(),
                 'model_type' => $finding->model->getMorphClass(),
                 'model_id' => $finding->model->getKey(),
-                'context' => $finding->buildContext(),
+                'context_hash' => $this->contextHasher->hash($context),
+            ],
+            [
+                'status' => RecordStatus::Active,
+                'context' => $context,
                 'worklist' => $finding::getWorklist(),
                 'urgency' => $finding::getUrgency() ?? FindingUrgency::NORMAL,
-            ]);
+            ],
+        );
 
+        if ($record->wasRecentlyCreated) {
             if ($finding->isAutomaticallyResolved()) {
                 $this->resolve($record);
             }

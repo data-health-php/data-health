@@ -10,12 +10,23 @@ use DataHealth\Facades\DataHealth;
 use DataHealth\Finding;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
- * @property string $key
- * @property array<array-key, mixed> $context
+ * @property int $id
  * @property RecordStatus $status
+ * @property string $key
+ * @property string $model_type
+ * @property int $model_id
+ * @property array<array-key, mixed> $context
+ * @property string $context_hash
+ * @property string|null $assignee_type
+ * @property int|null $assignee_id
  * @property string|null $worklist
+ * @property FindingUrgency $urgency
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Model $model
  */
 class FindingRecord extends Model
 {
@@ -28,6 +39,7 @@ class FindingRecord extends Model
         'model_id',
         'role',
         'context',
+        'context_hash',
         'worklist',
         'updated_at',
         'urgency',

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use DataHealth\ContextHasher;
 use DataHealth\DataHealthManager;
 use DataHealth\Enums\FindingUrgency;
 use DataHealth\Enums\RecordStatus;
@@ -12,6 +13,7 @@ use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyResolvedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
 use DataHealth\Tests\Fixtures\DataHealth\UrgentFinding;
 use DataHealth\Tests\Fixtures\Models\TestModel;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 
 beforeEach(function () {
@@ -21,7 +23,7 @@ beforeEach(function () {
         '../../../../tests/Fixtures/DataHealth' => 'DataHealth\\Tests\\Fixtures\\DataHealth\\',
     ]);
 
-    $this->manager = new DataHealthManager(new FindingRegistry);
+    $this->manager = new DataHealthManager(new FindingRegistry, new ContextHasher);
     $this->model = TestModel::create(['name' => 'Example']);
 });
 
@@ -40,8 +42,55 @@ it('records a newly found issue with status context urgency and worklist', funct
         ->and($record->key)->toBe('UrgentFinding')
         ->and($record->model->is($this->model))->toBeTrue()
         ->and($record->context)->toBe(['reason' => 'duplicate'])
+        ->and($record->context_hash)->toBe(hash('sha256', '{"reason":"duplicate"}'))
         ->and($record->worklist)->toBe('data-quality')
         ->and($record->urgency)->toBe(FindingUrgency::SOON);
+});
+
+it('treats object key order as the same context', function () {
+    $original = $this->manager->found(new UrgentFinding($this->model, [
+        'reason' => 'duplicate',
+        'meta' => [
+            'source' => 'import',
+            'attempt' => 1,
+        ],
+    ]));
+
+    $record = $this->manager->found(new UrgentFinding($this->model, [
+        'meta' => [
+            'attempt' => 1,
+            'source' => 'import',
+        ],
+        'reason' => 'duplicate',
+    ]));
+
+    expect(FindingRecord::query()->count())->toBe(1)
+        ->and($record->is($original))->toBeTrue();
+});
+
+it('treats additional object properties as a different context', function () {
+    $original = $this->manager->found(new UrgentFinding(
+        $this->model,
+        ['reason' => 'duplicate'],
+    ));
+    $record = $this->manager->found(new UrgentFinding($this->model, [
+        'reason' => 'duplicate',
+        'source' => 'import',
+    ]));
+
+    expect(FindingRecord::query()->count())->toBe(2)
+        ->and($record->isNot($original))->toBeTrue()
+        ->and($record->context_hash)->not->toBe($original->context_hash);
+});
+
+it('enforces unique finding identities in the database', function () {
+    $record = $this->manager->found(new UrgentFinding(
+        $this->model,
+        ['reason' => 'duplicate'],
+    ));
+
+    expect(fn () => $record->replicate()->save())
+        ->toThrow(UniqueConstraintViolationException::class);
 });
 
 it('uses normal urgency when the finding has no urgency attribute', function () {
