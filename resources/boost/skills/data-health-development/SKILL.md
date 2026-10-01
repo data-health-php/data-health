@@ -66,6 +66,15 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 - read action descriptions with `FindingClass::getMethodDescription('detect')`, substituting `verify` or `resolve` as needed
 - handle `null` when the class, method, or method description is absent
 
+### 8. Clean up findings for deleted models
+
+- set `DATA_HEALTH_AUTO_DELETE_ENABLED=true` to register wildcard cleanup for every Eloquent model type
+- leave `data-health.auto_delete.enabled` disabled when global cleanup is not wanted; no wildcard model listener is registered in that mode
+- alternatively, add the `DataHealth\Concerns\HasFindingRecords` concern for cleanup limited to selected model types
+- use the concern's `findingRecords` relationship when the application needs to query a model's findings
+- delete models through Eloquent instances so the model event can delete their linked finding records
+- remember that soft deletes also remove linked findings; run detection again after restoring a model
+
 ## Rules, References, and Templates
 
 Read before executing:
@@ -138,6 +147,18 @@ class DuplicateCustomerFinding extends Finding implements CanDetect
 }
 ```
 
+Clean up linked finding records when a model is deleted:
+
+```php
+use DataHealth\Concerns\HasFindingRecords;
+use Illuminate\Database\Eloquent\Model;
+
+class Customer extends Model
+{
+    use HasFindingRecords;
+}
+```
+
 ## Anti-patterns
 
 - do not document package internals here; keep the skill focused on adoption in Laravel apps
@@ -146,3 +167,4 @@ class DuplicateCustomerFinding extends Finding implements CanDetect
 - do not add `Async` without operating a worker for its selected queue and connection
 - do not rename an explicit finding key after records have been persisted unless those records are migrated too
 - do not use method descriptions as execution logic; they are optional user-facing metadata
+- do not use mass deletes for models with finding records because Eloquent does not dispatch model events for them

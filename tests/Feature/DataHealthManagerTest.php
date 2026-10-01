@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use DataHealth\ContextHasher;
 use DataHealth\DataHealthManager;
+use DataHealth\DataHealthServiceProvider;
 use DataHealth\Enums\FindingUrgency;
 use DataHealth\Enums\RecordStatus;
 use DataHealth\FindingRegistry;
@@ -13,6 +14,7 @@ use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyResolvedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
 use DataHealth\Tests\Fixtures\DataHealth\KeyedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\UrgentFinding;
+use DataHealth\Tests\Fixtures\Models\PlainTestModel;
 use DataHealth\Tests\Fixtures\Models\TestModel;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
@@ -254,4 +256,34 @@ it('returns the runtime finding from a record', function () {
     $record = $this->manager->found(new UrgentFinding($this->model));
 
     expect($record->getFinding())->toBeInstanceOf(UrgentFinding::class);
+});
+
+it('exposes finding records through the linked model', function () {
+    $record = $this->manager->found(new UrgentFinding($this->model));
+
+    expect($this->model->findingRecords)->toHaveCount(1)
+        ->and($this->model->findingRecords->first()->is($record))->toBeTrue();
+});
+
+it('deletes finding records when their linked model is deleted', function () {
+    $otherModel = TestModel::create(['name' => 'Other']);
+    $linkedRecord = $this->manager->found(new UrgentFinding($this->model));
+    $otherRecord = $this->manager->found(new UrgentFinding($otherModel));
+
+    $this->model->delete();
+
+    expect(FindingRecord::query()->find($linkedRecord->id))->toBeNull()
+        ->and(FindingRecord::query()->find($otherRecord->id))->not->toBeNull();
+});
+
+it('automatically deletes linked records through the optional wildcard listener', function () {
+    config()->set('data-health.auto_delete.enabled', true);
+    (new DataHealthServiceProvider(app()))->boot();
+
+    $model = PlainTestModel::create(['name' => 'Without concern']);
+    $record = $this->manager->found(new UrgentFinding($model));
+
+    $model->delete();
+
+    expect(FindingRecord::query()->find($record->id))->toBeNull();
 });

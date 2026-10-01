@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace DataHealth\Tests\Fixtures\Models;
 
+use DataHealth\Concerns\HasFindingRecords;
 use Illuminate\Database\Eloquent\Model;
 
 class TestModel extends Model
 {
+    use HasFindingRecords;
+
     protected $table = 'data_health_test_models';
 
     protected $guarded = [];
