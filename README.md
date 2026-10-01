@@ -73,6 +73,31 @@ Scheduled detections are named, prevented from overlapping, and limited to one s
 
 ## Usage
 
+### Running Scheduled Detections Asynchronously
+
+Add the `Async` attribute alongside `Scheduled` to dispatch a detection to Laravel's queue instead of running it in the scheduler process:
+
+```php
+use DataHealth\Attributes\Async;
+use DataHealth\Attributes\Scheduled;
+use DataHealth\Contracts\CanDetect;
+use DataHealth\Finding;
+
+#[Async(queue: 'data-health', connection: 'redis')]
+#[Scheduled('*/5 * * * *')]
+class DuplicateCustomerFinding extends Finding implements CanDetect
+{
+    public static function detect(): int
+    {
+        // Detect and record findings...
+
+        return 0;
+    }
+}
+```
+
+Both arguments are optional. When omitted, Laravel uses the application's default queue and connection. Configure a non-`sync` queue connection and run a queue worker to process detections asynchronously. Only one queued or running detection job is allowed per Finding class at a time, using Laravel's unique-job cache lock.
+
 ### Assigning Findings to Worklists
 
 Add the `Worklist` attribute to a finding to save its worklist on newly created finding records:

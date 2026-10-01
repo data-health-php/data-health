@@ -38,7 +38,15 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 - scheduled detections do not overlap and run on one scheduler server per cron occurrence
 - use a shared `database`, `memcached`, `dynamodb`, or `redis` cache store when the scheduler runs on multiple servers
 
-### 4. Assign findings to worklists
+### 4. Configure asynchronous detections
+
+- add `#[DataHealth\Attributes\Async]` alongside `#[DataHealth\Attributes\Scheduled(...)]` to dispatch a scheduled detection to Laravel's queue
+- optionally pass `queue` and `connection` to the `Async` attribute; omit them to use the application's queue defaults
+- configure a non-`sync` queue connection for actual asynchronous execution
+- ensure a queue worker is running before enabling asynchronous detections
+- keep a lock-capable shared cache configured so only one queued or running detection exists per finding class
+
+### 5. Assign findings to worklists
 
 - add `#[DataHealth\Attributes\Worklist('worklist-name')]` to a finding class when newly created records should be assigned to that worklist
 - omit the attribute when the finding should not have a worklist
@@ -51,6 +59,25 @@ Read before executing:
 - package `README.md`
 
 ## Example
+
+Queue a scheduled detection:
+
+```php
+use DataHealth\Attributes\Async;
+use DataHealth\Attributes\Scheduled;
+use DataHealth\Contracts\CanDetect;
+use DataHealth\Finding;
+
+#[Async(queue: 'data-health', connection: 'redis')]
+#[Scheduled('*/5 * * * *')]
+class DuplicateCustomerFinding extends Finding implements CanDetect
+{
+    public static function detect(): int
+    {
+        return 0;
+    }
+}
+```
 
 Assign a finding to a worklist:
 
@@ -70,3 +97,4 @@ class DuplicateCustomerFinding extends Finding
 - do not document package internals here; keep the skill focused on adoption in Laravel apps
 - do not disable Laravel's scheduler globally when only Data Health detections need to be paused
 - do not use per-server cache storage for scheduler locks in a multi-server deployment
+- do not add `Async` without operating a worker for its selected queue and connection
