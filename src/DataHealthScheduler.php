@@ -41,7 +41,10 @@ class DataHealthScheduler
 
         $this->schedule
             ->call($finding::detect(...))
-            ->cron($expression);
+            ->name('data-health:detect:'.$finding)
+            ->cron($expression)
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /** @param class-string<Finding> $finding */

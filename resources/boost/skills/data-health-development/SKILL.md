@@ -35,6 +35,8 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 - scheduled detections are enabled by default
 - set `DATA_HEALTH_SCHEDULER_ENABLED=false` to prevent the package from registering scheduled detection callbacks
 - use `data-health.scheduler.enabled` when overriding the value at runtime or in tests
+- scheduled detections do not overlap and run on one scheduler server per cron occurrence
+- use a shared `database`, `memcached`, `dynamodb`, or `redis` cache store when the scheduler runs on multiple servers
 
 ### 4. Assign findings to worklists
 
@@ -67,3 +69,4 @@ class DuplicateCustomerFinding extends Finding
 
 - do not document package internals here; keep the skill focused on adoption in Laravel apps
 - do not disable Laravel's scheduler globally when only Data Health detections need to be paused
+- do not use per-server cache storage for scheduler locks in a multi-server deployment

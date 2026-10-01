@@ -32,6 +32,8 @@ class DataHealthServiceProvider extends ServiceProvider
             return;
         }
 
+        $this->app->make(DataHealthScheduler::class)->schedule();
+
         $this->publishes([
             __DIR__.'/../config/data-health.php' => config_path('data-health.php'),
         ], ['data-health', 'data-health-config']);
