@@ -17,14 +17,14 @@ use SplFileInfo;
 class FindingRegistry
 {
     /** @var Collection<string, class-string<Finding>> */
-    private Collection $fails;
+    private Collection $findings;
 
     /** @return Collection<string, class-string<Finding>> */
     public function all(): Collection
     {
         $this->bootIfNotBooted();
 
-        return $this->fails;
+        return $this->findings;
     }
 
     /** @return Collection<string, class-string<Finding&CanDetect>> */
@@ -32,7 +32,7 @@ class FindingRegistry
     {
         $this->bootIfNotBooted();
 
-        return $this->fails->filter(fn (string $class) => is_a($class, CanDetect::class, true));
+        return $this->findings->filter(fn (string $class) => is_a($class, CanDetect::class, true));
     }
 
     /** @return Collection<string, class-string<Finding&CanDetect>> */
@@ -69,36 +69,36 @@ class FindingRegistry
     {
         $this->bootIfNotBooted();
 
-        foreach ($this->fails as $key => $class) {
+        foreach ($this->findings as $key => $class) {
             if ($class === $keyOrClass) {
                 return [$key, $class];
             }
         }
 
-        if ($this->fails->has($keyOrClass)) {
-            $class = $this->fails->get($keyOrClass);
+        if ($this->findings->has($keyOrClass)) {
+            $class = $this->findings->get($keyOrClass);
 
             if ($class !== null) {
                 return [$keyOrClass, $class];
             }
         }
 
-        throw new RuntimeException("Fail with key or class {$keyOrClass} not found");
+        throw new RuntimeException("Finding with key or class {$keyOrClass} not found");
     }
 
     private function bootIfNotBooted(): void
     {
-        if (! isset($this->fails)) {
+        if (! isset($this->findings)) {
             $this->boot();
         }
     }
 
     private function boot(): void
     {
-        $this->fails = collect();
+        $this->findings = collect();
 
         foreach (config('data-health.directories') as $dir => $namespace) {
-            $this->fails = $this->fails->merge($this->discover($dir, $namespace));
+            $this->findings = $this->findings->merge($this->discover($dir, $namespace));
         }
     }
 

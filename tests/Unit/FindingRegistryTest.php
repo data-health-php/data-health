@@ -65,5 +65,5 @@ it('looks up keys and classes in either direction', function () {
 
 it('rejects unknown finding keys and classes', function () {
     expect(fn () => (new FindingRegistry)->getClass('MissingFinding'))
-        ->toThrow(RuntimeException::class, 'Fail with key or class MissingFinding not found');
+        ->toThrow(RuntimeException::class, 'Finding with key or class MissingFinding not found');
 });
