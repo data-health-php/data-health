@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use DataHealth\Console\Commands\DataHealthCommand;
 use DataHealth\DataHealthCheckCursor;
 use DataHealth\DataHealthManager;
 use DataHealth\DataHealthScheduler;
@@ -21,21 +20,6 @@ it('merges the package configuration', function () {
 it('does not register a wildcard model listener when auto delete is disabled', function () {
     expect(app('events')->hasWildcardListeners('eloquent.deleted: App\\Models\\Customer'))
         ->toBeFalse();
-});
-
-it('loads package translations and views', function () {
-    expect(trans('data-health::messages.placeholder'))
-        ->toBe('DataHealth placeholder translation.')
-        ->and(view()->exists('data-health::placeholder'))->toBeTrue();
-});
-
-it('registers the package command', function () {
-    $this->artisan('data-health:placeholder')
-        ->expectsOutputToContain('DataHealth placeholder command executed.')
-        ->assertSuccessful();
-
-    expect(app('Illuminate\\Contracts\\Console\\Kernel')->all()['data-health:placeholder'])
-        ->toBeInstanceOf(DataHealthCommand::class);
 });
 
 it('resolves package services through their facades', function () {
@@ -60,7 +44,4 @@ it('registers each documented publish group', function (string $tag) {
     'all resources' => 'data-health',
     'configuration' => 'data-health-config',
     'migrations' => 'data-health-migrations',
-    'views' => 'data-health-views',
-    'translations' => 'data-health-lang',
-    'assets' => 'data-health-assets',
 ]);
