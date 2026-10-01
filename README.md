@@ -73,6 +73,42 @@ Scheduled detections are named, prevented from overlapping, and limited to one s
 
 ## Usage
 
+### Describing Findings and Their Actions
+
+Use the `Description` attribute on a finding class and on its `detect`, `verify`, or `resolve` methods to provide user-facing explanations:
+
+```php
+use DataHealth\Attributes\Description;
+use DataHealth\Contracts\CanDetect;
+use DataHealth\Contracts\CanResolve;
+use DataHealth\Contracts\CanVerify;
+use DataHealth\Finding;
+
+#[Description('The customer appears more than once with the same email address.')]
+class DuplicateCustomerFinding extends Finding implements CanDetect, CanResolve, CanVerify
+{
+    #[Description('Searches customer records for duplicate email addresses.')]
+    public static function detect(): int
+    {
+        // ...
+    }
+
+    #[Description('Checks whether the duplicate customer records still exist.')]
+    public function verify(): bool
+    {
+        // ...
+    }
+
+    #[Description('Merges the duplicate records into the oldest customer record.')]
+    public function resolve(): bool
+    {
+        // ...
+    }
+}
+```
+
+Read the descriptions for display in a user interface with `DuplicateCustomerFinding::getDescription()` and `DuplicateCustomerFinding::getMethodDescription('detect')`. Missing class, method, or method descriptions return `null`.
+
 ### Running Scheduled Detections Asynchronously
 
 Add the `Async` attribute alongside `Scheduled` to dispatch a detection to Laravel's queue instead of running it in the scheduler process:

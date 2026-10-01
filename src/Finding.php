@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DataHealth;
 
 use DataHealth\Attributes\AutoResolve;
+use DataHealth\Attributes\Description;
 use DataHealth\Attributes\Urgency;
 use DataHealth\Attributes\Worklist;
 use DataHealth\Enums\FindingUrgency;
@@ -40,38 +41,62 @@ abstract class Finding
 
     public static function getUrgency(): ?FindingUrgency
     {
-        $reflection = new ReflectionClass(static::class);
-
-        $attributes = $reflection->getAttributes(Urgency::class);
-
-        $attribute = array_first($attributes);
-
-        if ($attribute === null) {
-            return null;
-        }
-
-        return array_first($attribute->getArguments()) ?? null;
+        return self::classAttribute(Urgency::class)?->urgency;
     }
 
     public static function getWorklist(): ?string
     {
-        $reflection = new ReflectionClass(static::class);
+        return self::classAttribute(Worklist::class)?->worklist;
+    }
 
-        $attribute = array_first($reflection->getAttributes(Worklist::class));
+    public static function getDescription(): ?string
+    {
+        return self::classAttribute(Description::class)?->description;
+    }
 
-        if ($attribute === null) {
-            return null;
-        }
-
-        return $attribute->newInstance()->worklist;
+    public static function getMethodDescription(string $method): ?string
+    {
+        return self::methodAttribute($method, Description::class)?->description;
     }
 
     public function isAutomaticallyResolved(): bool
     {
+        return self::classAttribute(AutoResolve::class) !== null;
+    }
+
+    /**
+     * @template TAttribute of object
+     *
+     * @param  class-string<TAttribute>  $attribute
+     * @return TAttribute|null
+     */
+    private static function classAttribute(string $attribute): ?object
+    {
+        $reflectionAttribute = array_first(
+            (new ReflectionClass(static::class))->getAttributes($attribute),
+        );
+
+        return $reflectionAttribute?->newInstance();
+    }
+
+    /**
+     * @template TAttribute of object
+     *
+     * @param  class-string<TAttribute>  $attribute
+     * @return TAttribute|null
+     */
+    private static function methodAttribute(string $method, string $attribute): ?object
+    {
         $reflection = new ReflectionClass(static::class);
 
-        $attributes = $reflection->getAttributes(AutoResolve::class);
+        if (! $reflection->hasMethod($method)) {
+            return null;
+        }
 
-        return ! empty($attributes);
+        $reflectionAttribute = array_first(
+            $reflection->getMethod($method)->getAttributes($attribute),
+        );
+
+        return $reflectionAttribute?->newInstance();
     }
 }

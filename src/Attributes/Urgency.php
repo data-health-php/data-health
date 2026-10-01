@@ -10,5 +10,5 @@ use DataHealth\Enums\FindingUrgency;
 #[Attribute(Attribute::TARGET_CLASS)]
 class Urgency
 {
-    public function __construct(FindingUrgency $urgency) {}
+    public function __construct(public readonly FindingUrgency $urgency) {}
 }
