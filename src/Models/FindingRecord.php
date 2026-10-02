@@ -65,6 +65,14 @@ class FindingRecord extends Model
         return $this->morphTo();
     }
 
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function assignee(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
     public function getFinding(): Finding
     {
         return DataHealth::getFindingForRecord($this);
