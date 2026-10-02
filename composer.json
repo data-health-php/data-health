@@ -1,13 +1,12 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "23m/data-health",
+    "name": "data-health/data-health",
     "description": "Check for inconsistencies in your data and fix them",
     "keywords": [
         "laravel",
-        "23m",
         "data-health"
     ],
-    "homepage": "https://github.com/23m/data-health",
+    "homepage": "https://github.com/data-health/data-health",
     "license": "MIT",
     "authors": [
         {

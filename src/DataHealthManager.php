@@ -35,6 +35,7 @@ class DataHealthManager
     public function found(Finding $finding): FindingRecord
     {
         $context = $finding->buildContext();
+        $detectedAt = now();
 
         $record = FindingRecord::query()->firstOrCreate(
             [
@@ -48,6 +49,7 @@ class DataHealthManager
                 'context' => $context,
                 'worklist' => $finding::getWorklist(),
                 'urgency' => $finding::getUrgency() ?? FindingUrgency::NORMAL,
+                'last_detected_at' => $detectedAt,
             ],
         );
 
@@ -59,20 +61,13 @@ class DataHealthManager
             return $record;
         }
 
-        if ($record->status === RecordStatus::Active) {
-            return tap($record)->update([
-                'updated_at' => now(),
-            ]);
-        }
-
         if ($record->status === RecordStatus::Resolved) {
-            return tap($record)->update([
-                'status' => RecordStatus::Active,
-                'updated_at' => now(),
-            ]);
+            $record->status = RecordStatus::Active;
         }
 
-        return $record;
+        return tap($record)->update([
+            'last_detected_at' => $detectedAt,
+        ]);
     }
 
     public function resolve(FindingRecord $record): bool

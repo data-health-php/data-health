@@ -21,6 +21,7 @@ it('creates and rolls back the package tables', function () {
         'context_hash',
         'worklist',
         'urgency',
+        'last_detected_at',
         'created_at',
         'updated_at',
     ]))->toBeTrue()
