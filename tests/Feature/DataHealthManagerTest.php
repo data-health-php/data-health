@@ -35,6 +35,8 @@ afterEach(function () {
 });
 
 it('records a newly found issue with status context urgency and worklist', function () {
+    Carbon::setTestNow('2026-01-01 10:00:00');
+
     $record = $this->manager->found(new UrgentFinding(
         $this->model,
         ['reason' => 'duplicate'],
@@ -47,7 +49,8 @@ it('records a newly found issue with status context urgency and worklist', funct
         ->and($record->context)->toBe(['reason' => 'duplicate'])
         ->and($record->context_hash)->toBe(hash('sha256', '{"reason":"duplicate"}'))
         ->and($record->worklist)->toBe('data-quality')
-        ->and($record->urgency)->toBe(FindingUrgency::SOON);
+        ->and($record->urgency)->toBe(FindingUrgency::SOON)
+        ->and($record->last_detected_at->toDateTimeString())->toBe('2026-01-01 10:00:00');
 });
 
 it('uses an explicit finding key in the database and registry', function () {
@@ -120,24 +123,35 @@ it('refreshes an existing active record instead of creating a duplicate', functi
 
     expect(FindingRecord::query()->count())->toBe(1)
         ->and($record->is($original))->toBeTrue()
+        ->and($record->last_detected_at->toDateTimeString())->toBe('2026-01-01 11:00:00')
         ->and($record->updated_at->toDateTimeString())->toBe('2026-01-01 11:00:00');
 });
 
 it('reactivates a resolved record when the issue is found again', function () {
+    Carbon::setTestNow('2026-01-01 10:00:00');
     $finding = new UrgentFinding($this->model, ['reason' => 'duplicate']);
     $record = $this->manager->found($finding);
     $record->update(['status' => RecordStatus::Resolved]);
 
-    expect($this->manager->found($finding)->status)->toBe(RecordStatus::Active)
+    Carbon::setTestNow('2026-01-01 11:00:00');
+    $record = $this->manager->found($finding);
+
+    expect($record->status)->toBe(RecordStatus::Active)
+        ->and($record->last_detected_at->toDateTimeString())->toBe('2026-01-01 11:00:00')
         ->and(FindingRecord::query()->count())->toBe(1);
 });
 
 it('leaves an ignored record ignored when the issue is found again', function () {
+    Carbon::setTestNow('2026-01-01 10:00:00');
     $finding = new UrgentFinding($this->model, ['reason' => 'duplicate']);
     $record = $this->manager->found($finding);
     $record->update(['status' => RecordStatus::Ignored]);
 
-    expect($this->manager->found($finding)->status)->toBe(RecordStatus::Ignored)
+    Carbon::setTestNow('2026-01-01 11:00:00');
+    $record = $this->manager->found($finding);
+
+    expect($record->status)->toBe(RecordStatus::Ignored)
+        ->and($record->last_detected_at->toDateTimeString())->toBe('2026-01-01 11:00:00')
         ->and(FindingRecord::query()->count())->toBe(1);
 });
 

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->nullableMorphs('assignee');
             $table->string('worklist')->nullable();
             $table->string('urgency');
+            $table->timestamp('last_detected_at');
             $table->timestamps();
 
             $table->unique(

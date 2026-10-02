@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $assignee_id
  * @property string|null $worklist
  * @property FindingUrgency $urgency
+ * @property Carbon $last_detected_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Model $model
@@ -41,6 +42,7 @@ class FindingRecord extends Model
         'context',
         'context_hash',
         'worklist',
+        'last_detected_at',
         'updated_at',
         'urgency',
     ];
@@ -51,6 +53,7 @@ class FindingRecord extends Model
             'status' => RecordStatus::class,
             'context' => 'array',
             'urgency' => FindingUrgency::class,
+            'last_detected_at' => 'datetime',
         ];
     }
 
