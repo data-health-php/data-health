@@ -1,5 +1,8 @@
 <div align="center">
-    <h1>Data Health</h1>
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="artwork/data-health-logo-dark.svg">
+        <img src="artwork/data-health-logo.svg" alt="Data Health — Find, Verify, Resolve" width="720">
+    </picture>
 </div>
 
 <p align="center">
