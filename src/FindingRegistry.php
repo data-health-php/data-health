@@ -41,7 +41,7 @@ class FindingRegistry
         $this->bootIfNotBooted();
 
         return $this->detectable()->filter(
-            fn (string $class) => ! empty(new ReflectionClass($class)->getAttributes(Scheduled::class)),
+            fn (string $class) => ! empty((new ReflectionClass($class))->getAttributes(Scheduled::class)),
         );
     }
 
