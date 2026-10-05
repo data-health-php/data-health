@@ -16,7 +16,7 @@ class DataHealthCheckCursor
      *
      * @param  Builder<TModel>  $query
      * @param  class-string<Finding>  $check
-     * @return Collection<int, Model>
+     * @return Collection<int, covariant Model>
      */
     public function next(Builder $query, string $check, int $limit): Collection
     {
@@ -45,10 +45,10 @@ class DataHealthCheckCursor
             'last_id' => $lastId === $overallLastId ? 0 : $lastId,
         ]);
 
-        $resultQuery = clone $query;
-        $resultQuery->whereKey($ids);
-        $resultQuery->orderBy('id');
-
-        return $resultQuery->get();
+        return (clone $query)
+            ->whereKey($ids)
+            ->orderBy('id')
+            ->get()
+            ->values();
     }
 }
