@@ -8,16 +8,20 @@ use DataHealth\DataHealthServiceProvider;
 use DataHealth\Enums\FindingUrgency;
 use DataHealth\Enums\RecordStatus;
 use DataHealth\FindingRegistry;
+use DataHealth\Jobs\VerifyFinding;
 use DataHealth\Models\FindingRecord;
 use DataHealth\Tests\Fixtures\DataHealth\ActionableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyResolvedFinding;
+use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyVerifiedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
+use DataHealth\Tests\Fixtures\DataHealth\DelayedAutomaticallyVerifiedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\KeyedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\UrgentFinding;
 use DataHealth\Tests\Fixtures\Models\PlainTestModel;
 use DataHealth\Tests\Fixtures\Models\TestModel;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     $this->migrateDataHealthDatabase();
@@ -184,6 +188,62 @@ it('keeps automatically resolved findings active when resolution fails', functio
     ));
 
     expect($record->status)->toBe(RecordStatus::Active);
+});
+
+it('automatically verifies new findings marked for automatic verification', function (bool $succeeds) {
+    $record = $this->manager->found(new AutomaticallyVerifiedFinding(
+        $this->model,
+        ['scenario' => 'verify:boolean:'.($succeeds ? 'true' : 'false')],
+    ));
+
+    expect($record->fresh()->status)->toBe(
+        $succeeds ? RecordStatus::Resolved : RecordStatus::Active,
+    );
+})->with([true, false]);
+
+it('can delay automatic verification in minutes', function () {
+    Carbon::setTestNow('2026-01-01 10:00:00');
+    Queue::fake();
+
+    $record = $this->manager->found(new DelayedAutomaticallyVerifiedFinding(
+        $this->model,
+        ['scenario' => 'verify:boolean:true'],
+    ));
+
+    Queue::assertPushed(
+        VerifyFinding::class,
+        fn (VerifyFinding $job): bool => $job->recordId === $record->id
+            && $job->delay?->equalTo(now()->addMinutes(2)) === true
+            && $job->afterCommit === true,
+    );
+
+    expect($record->status)->toBe(RecordStatus::Active);
+});
+
+it('only automatically verifies a finding when its record is created', function () {
+    Queue::fake();
+    $finding = new DelayedAutomaticallyVerifiedFinding(
+        $this->model,
+        ['scenario' => 'verify:boolean:true'],
+    );
+
+    $this->manager->found($finding);
+    $this->manager->found($finding);
+
+    Queue::assertPushed(VerifyFinding::class, 1);
+});
+
+it('does not automatically verify a record that is no longer active', function () {
+    Queue::fake();
+    $record = $this->manager->found(new DelayedAutomaticallyVerifiedFinding(
+        $this->model,
+        ['scenario' => 'verify:boolean:true'],
+    ));
+    $record->update(['status' => RecordStatus::Ignored]);
+
+    (new VerifyFinding($record->id))->handle($this->manager);
+
+    expect($record->fresh()->status)->toBe(RecordStatus::Ignored);
 });
 
 it('uses boolean results returned by actionable findings', function (string $operation, bool $succeeds) {

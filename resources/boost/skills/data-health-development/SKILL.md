@@ -165,6 +165,8 @@ class Customer extends Model
 - do not disable Laravel's scheduler globally when only Data Health detections need to be paused
 - do not use per-server cache storage for scheduler locks in a multi-server deployment
 - do not add `Async` without operating a worker for its selected queue and connection
+- do not add `AutoVerify` to a finding that does not implement `CanVerify`
+- do not expect automatic verification to run again when an existing record is rediscovered
 - do not rename an explicit finding key after records have been persisted unless those records are migrated too
 - do not use method descriptions as execution logic; they are optional user-facing metadata
 - do not use mass deletes for models with finding records because Eloquent does not dispatch model events for them

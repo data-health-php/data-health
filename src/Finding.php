@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DataHealth;
 
 use DataHealth\Attributes\AutoResolve;
+use DataHealth\Attributes\AutoVerify;
 use DataHealth\Attributes\Description;
 use DataHealth\Attributes\Key;
 use DataHealth\Attributes\Urgency;
@@ -64,6 +65,11 @@ abstract class Finding
     public function isAutomaticallyResolved(): bool
     {
         return self::classAttribute(AutoResolve::class) !== null;
+    }
+
+    public function getAutoVerifyDelay(): ?int
+    {
+        return self::classAttribute(AutoVerify::class)?->delay;
     }
 
     /**
