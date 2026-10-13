@@ -5,8 +5,10 @@ declare(strict_types=1);
 use DataHealth\FindingRegistry;
 use DataHealth\Tests\Fixtures\DataHealth\ActionableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyResolvedFinding;
+use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyVerifiedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
 use DataHealth\Tests\Fixtures\DataHealth\Customers\NestedFinding;
+use DataHealth\Tests\Fixtures\DataHealth\DelayedAutomaticallyVerifiedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\DetectableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\KeyedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\ScheduledFinding;
@@ -23,8 +25,10 @@ it('discovers findings using their default or explicit keys', function () {
     expect((new FindingRegistry)->all()->all())->toBe([
         'ActionableFinding' => ActionableFinding::class,
         'AutomaticallyResolvedFinding' => AutomaticallyResolvedFinding::class,
+        'AutomaticallyVerifiedFinding' => AutomaticallyVerifiedFinding::class,
         'BasicFinding' => BasicFinding::class,
         'NestedFinding' => NestedFinding::class,
+        'DelayedAutomaticallyVerifiedFinding' => DelayedAutomaticallyVerifiedFinding::class,
         'DetectableFinding' => DetectableFinding::class,
         'duplicate-customer' => KeyedFinding::class,
         'ScheduledFinding' => ScheduledFinding::class,

@@ -10,7 +10,9 @@ use DataHealth\Contracts\Resolver;
 use DataHealth\Contracts\Verifier;
 use DataHealth\Enums\FindingUrgency;
 use DataHealth\Enums\RecordStatus;
+use DataHealth\Jobs\VerifyFinding;
 use DataHealth\Models\FindingRecord;
+use Illuminate\Contracts\Bus\Dispatcher;
 use RuntimeException;
 
 class DataHealthManager
@@ -56,6 +58,16 @@ class DataHealthManager
         if ($record->wasRecentlyCreated) {
             if ($finding->isAutomaticallyResolved()) {
                 $this->resolve($record);
+            }
+
+            if (($delay = $finding->getAutoVerifyDelay()) !== null) {
+                $job = (new VerifyFinding($record->id))->afterCommit();
+
+                if ($delay > 0) {
+                    $job->delay(now()->addMinutes($delay));
+                }
+
+                app(Dispatcher::class)->dispatch($job);
             }
 
             return $record;

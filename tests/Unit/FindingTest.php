@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use DataHealth\Attributes\AutoVerify;
 use DataHealth\Enums\FindingUrgency;
 use DataHealth\Tests\Fixtures\DataHealth\ActionableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyResolvedFinding;
+use DataHealth\Tests\Fixtures\DataHealth\AutomaticallyVerifiedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
+use DataHealth\Tests\Fixtures\DataHealth\DelayedAutomaticallyVerifiedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\DetectableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\KeyedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\UrgentFinding;
@@ -57,4 +60,15 @@ it('passes context through a finding implementation', function () {
 it('reports whether it should be resolved automatically', function () {
     expect((new AutomaticallyResolvedFinding(new TestModel))->isAutomaticallyResolved())->toBeTrue()
         ->and((new BasicFinding(new TestModel))->isAutomaticallyResolved())->toBeFalse();
+});
+
+it('reads the automatic verification delay', function () {
+    expect((new AutomaticallyVerifiedFinding(new TestModel))->getAutoVerifyDelay())->toBe(0)
+        ->and((new DelayedAutomaticallyVerifiedFinding(new TestModel))->getAutoVerifyDelay())->toBe(2)
+        ->and((new BasicFinding(new TestModel))->getAutoVerifyDelay())->toBeNull();
+});
+
+it('rejects a negative automatic verification delay', function () {
+    expect(fn () => new AutoVerify(-1))
+        ->toThrow(InvalidArgumentException::class, 'must be zero or greater');
 });
