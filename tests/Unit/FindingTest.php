@@ -25,8 +25,7 @@ it('uses the key attribute when present', function () {
 it('uses empty context by default', function () {
     $finding = new BasicFinding(new TestModel);
 
-    expect($finding->context)->toBe([])
-        ->and($finding->buildContext())->toBe([]);
+    expect($finding->context)->toBe([]);
 });
 
 it('reads urgency from the urgency attribute', function () {
@@ -51,10 +50,11 @@ it('returns null when a description or method is missing', function () {
         ->and(BasicFinding::getMethodDescription('verify'))->toBeNull();
 });
 
-it('passes context through a finding implementation', function () {
+it('uses context given to the constructor', function () {
     $context = ['reason' => 'duplicate'];
 
-    expect((new UrgentFinding(new TestModel, $context))->buildContext())->toBe($context);
+    expect((new UrgentFinding(new TestModel, $context))->context)->toBe($context)
+        ->and(method_exists(UrgentFinding::class, 'buildContext'))->toBeFalse();
 });
 
 it('reports whether it should be resolved automatically', function () {

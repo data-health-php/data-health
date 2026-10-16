@@ -11,11 +11,4 @@ use DataHealth\Finding;
 
 #[Urgency(FindingUrgency::SOON)]
 #[Worklist('data-quality')]
-class UrgentFinding extends Finding
-{
-    /** @return array<string, mixed> */
-    public function buildContext(): array
-    {
-        return $this->context;
-    }
-}
+class UrgentFinding extends Finding {}

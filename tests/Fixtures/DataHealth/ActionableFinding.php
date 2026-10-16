@@ -15,12 +15,6 @@ use DataHealth\Tests\Fixtures\Handlers\FindingVerifier;
 #[Description('A finding that can be verified and resolved.')]
 class ActionableFinding extends Finding implements CanResolve, CanVerify
 {
-    /** @return array<string, mixed> */
-    public function buildContext(): array
-    {
-        return $this->context;
-    }
-
     #[Description('Corrects the problem represented by the finding.')]
     public function resolve(): bool|callable|string
     {

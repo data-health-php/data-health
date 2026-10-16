@@ -23,12 +23,6 @@ abstract class Finding
         public readonly array $context = [],
     ) {}
 
-    /** @return array<array-key, mixed> */
-    public function buildContext(): array
-    {
-        return [];
-    }
-
     public static function key(): string
     {
         return self::classAttribute(Key::class)->key

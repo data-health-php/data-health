@@ -36,7 +36,6 @@ class DataHealthManager
 
     public function found(Finding $finding): FindingRecord
     {
-        $context = $finding->buildContext();
         $detectedAt = now();
 
         $record = FindingRecord::query()->firstOrCreate(
@@ -44,11 +43,11 @@ class DataHealthManager
                 'key' => $finding::key(),
                 'model_type' => $finding->model->getMorphClass(),
                 'model_id' => $finding->model->getKey(),
-                'context_hash' => $this->contextHasher->hash($context),
+                'context_hash' => $this->contextHasher->hash($finding->context),
             ],
             [
                 'status' => RecordStatus::Active,
-                'context' => $context,
+                'context' => $finding->context,
                 'worklist' => $finding::getWorklist(),
                 'urgency' => $finding::getUrgency() ?? FindingUrgency::NORMAL,
                 'last_detected_at' => $detectedAt,
