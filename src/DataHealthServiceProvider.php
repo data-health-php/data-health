@@ -6,6 +6,8 @@ namespace DataHealth;
 
 use DataHealth\Console\Commands\DetectCommand;
 use DataHealth\Console\Commands\MakeFindingCommand;
+use DataHealth\Console\Commands\ResolveCommand;
+use DataHealth\Console\Commands\VerifyCommand;
 use DataHealth\Listeners\DeleteFindingRecordsForDeletedModel;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\ServiceProvider;
@@ -39,6 +41,8 @@ class DataHealthServiceProvider extends ServiceProvider
         $this->commands([
             DetectCommand::class,
             MakeFindingCommand::class,
+            ResolveCommand::class,
+            VerifyCommand::class,
         ]);
 
         $this->app->make(DataHealthScheduler::class)->schedule();

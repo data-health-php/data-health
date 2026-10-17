@@ -154,6 +154,25 @@ command returns a nonzero exit code if any detection or dispatch fails. Async
 success confirms dispatch, with results handled by the worker. If `detect()` returns
 a callable, the command and queued job invoke it through Laravel's container.
 
+## Verifying and Resolving Findings
+
+Run an action synchronously for a persisted finding record by its ID:
+
+```bash
+php artisan verify 1
+php artisan resolve 1
+```
+
+The finding must implement `CanVerify` or `CanResolve` for the requested action.
+The commands use the manager to evaluate the method's return value: a boolean,
+a callable invoked through Laravel's container, or a `Verifier` / `Resolver`
+handler class resolved through the container.
+
+A `true` result marks the record resolved, reports success, and exits with code `0`.
+A `false` result leaves its status unchanged and exits with code `1`. Missing
+records, unsupported actions, and exceptions also report an error and exit with
+code `1`. The ID identifies the finding record, rather than its related model.
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.

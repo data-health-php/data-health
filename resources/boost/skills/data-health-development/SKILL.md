@@ -99,7 +99,15 @@ Run detection manually with `php artisan health:detect`:
 - read the constructor-provided data from the finding's readonly `context` property in verification and resolution logic
 - remember that context contributes to finding identity, so equivalent associative arrays resolve to the same record while different values create distinct records
 
-### 9. Clean up findings for deleted models
+### 9. Verify or resolve a persisted finding
+
+- run `php artisan verify 1` or `php artisan resolve 1` with the finding record ID
+- implement `CanVerify` or `CanResolve` on the finding for the requested action
+- actions run synchronously through the manager, which evaluates booleans, container-invoked callables, and container-resolved `Verifier` / `Resolver` handler classes
+- a `true` result marks the record resolved and exits with code `0`; `false` leaves its status unchanged and exits with code `1`
+- missing records, unsupported actions, and exceptions report an error and exit with code `1`
+
+### 10. Clean up findings for deleted models
 
 - set `DATA_HEALTH_AUTO_DELETE_ENABLED=true` to register wildcard cleanup for every Eloquent model type
 - leave `data-health.auto_delete.enabled` disabled when global cleanup is not wanted; no wildcard model listener is registered in that mode
