@@ -1,0 +1,9 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+{{ imports }}
+
+{{ attributes }}class {{ class }} extends {{ baseClass }}{{ contracts }}{{ body }}

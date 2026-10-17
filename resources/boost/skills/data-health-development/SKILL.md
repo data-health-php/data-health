@@ -32,6 +32,20 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 - place findings in any nested directory that follows the configured PSR-4 namespace structure
 - only concrete classes extending `DataHealth\Finding` are registered; other PHP classes are ignored
 
+Generate a finding with `php artisan health:make:finding Customers/DuplicateCustomerFinding --detect --verify --resolve`.
+The command writes to the first configured finding directory and namespace; use
+`--directory=path/to/findings` to select another configured directory. It reports
+the created path and refuses to overwrite an existing file unless `--force` is supplied.
+
+- use `--detect`, `--verify`, and `--resolve` for the corresponding contracts and method placeholders
+- configure `data-health.make_finding.interfaces` with a list of `DataHealth\Contracts\CanDetect::class`, `CanVerify::class`, and/or `CanResolve::class` to choose default contracts and method placeholders; the default is `[CanDetect::class]`
+- set the list to `[]` for a plain finding; command options and automatic action attributes add their required capabilities to the configured defaults
+- use `--key=`, `--description=`, `--worklist=`, and `--urgency=immediate|soon|normal|deferred` for class metadata
+- use `--schedule="*/5 * * * *"` to add scheduled detection, then `--async` and optional `--queue=` / `--connection=` for queue routing
+- use `--auto-resolve` to add automatic resolution and its contract, or `--auto-verify=0` to add automatic verification with a non-negative delay in minutes and its contract
+- implement the generated method placeholders: detection returns `null`, and verification and resolution return `false`
+- inspect all options with `php artisan help health:make:finding`
+
 ### 3. Configure scheduled detections
 
 - scheduled detections are enabled by default
@@ -66,7 +80,14 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 - read action descriptions with `FindingClass::getMethodDescription('detect')`, substituting `verify` or `resolve` as needed
 - handle `null` when the class, method, or method description is absent
 
-### 8. Clean up findings for deleted models
+### 8. Add finding context
+
+- pass context as the second argument when constructing a finding or calling its static `found` method
+- use context for data that identifies or explains a finding for its related model
+- read the constructor-provided data from the finding's readonly `context` property in verification and resolution logic
+- remember that context contributes to finding identity, so equivalent associative arrays resolve to the same record while different values create distinct records
+
+### 9. Clean up findings for deleted models
 
 - set `DATA_HEALTH_AUTO_DELETE_ENABLED=true` to register wildcard cleanup for every Eloquent model type
 - leave `data-health.auto_delete.enabled` disabled when global cleanup is not wanted; no wildcard model listener is registered in that mode
@@ -96,9 +117,9 @@ use DataHealth\Finding;
 #[Scheduled('*/5 * * * *')]
 class DuplicateCustomerFinding extends Finding implements CanDetect
 {
-    public static function detect(): int
+    public static function detect(): int|callable|null
     {
-        return 0;
+        return null;
     }
 }
 ```
@@ -140,11 +161,19 @@ use DataHealth\Finding;
 class DuplicateCustomerFinding extends Finding implements CanDetect
 {
     #[Description('Searches customer records for duplicate email addresses.')]
-    public static function detect(): int
+    public static function detect(): int|callable|null
     {
-        return 0;
+        return null;
     }
 }
+```
+
+Record context for a finding:
+
+```php
+DuplicateCustomerFinding::found($customer, [
+    'duplicate_customer_id' => $duplicateCustomer->getKey(),
+]);
 ```
 
 Clean up linked finding records when a model is deleted:
@@ -166,7 +195,9 @@ class Customer extends Model
 - do not use per-server cache storage for scheduler locks in a multi-server deployment
 - do not add `Async` without operating a worker for its selected queue and connection
 - do not add `AutoVerify` to a finding that does not implement `CanVerify`
+- do not rely on generated detection, verification, or resolution placeholders as completed application logic
 - do not expect automatic verification to run again when an existing record is rediscovered
 - do not rename an explicit finding key after records have been persisted unless those records are migrated too
+- do not override or derive finding context after construction; pass the complete context to the constructor or static `found` method
 - do not use method descriptions as execution logic; they are optional user-facing metadata
 - do not use mass deletes for models with finding records because Eloquent does not dispatch model events for them

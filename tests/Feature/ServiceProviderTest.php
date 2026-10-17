@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use DataHealth\Contracts\CanDetect;
 use DataHealth\DataHealthCheckCursor;
 use DataHealth\DataHealthManager;
 use DataHealth\DataHealthScheduler;
@@ -14,7 +15,8 @@ it('merges the package configuration', function () {
     expect(config('data-health.directories'))->toBe([
         'app/DataHealth' => 'App\\DataHealth\\',
     ])->and(config('data-health.scheduler.enabled'))->toBeTrue()
-        ->and(config('data-health.auto_delete.enabled'))->toBeFalse();
+        ->and(config('data-health.auto_delete.enabled'))->toBeFalse()
+        ->and(config('data-health.make_finding.interfaces'))->toBe([CanDetect::class]);
 });
 
 it('does not register a wildcard model listener when auto delete is disabled', function () {

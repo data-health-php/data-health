@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use DataHealth\Contracts\CanDetect;
+
 return [
 
     'scheduler' => [
@@ -14,6 +16,13 @@ return [
 
     'directories' => [
         'app/DataHealth' => 'App\\DataHealth\\',
+    ],
+
+    'make_finding' => [
+        // Interfaces and method placeholders included in newly generated findings.
+        // Supported: CanDetect::class, CanVerify::class, and CanResolve::class
+        // from DataHealth\Contracts.
+        'interfaces' => [CanDetect::class],
     ],
 
 ];
