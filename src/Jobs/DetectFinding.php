@@ -19,7 +19,11 @@ class DetectFinding implements ShouldBeUnique, ShouldQueue
 
     public function handle(): void
     {
-        $this->finding::detect();
+        $response = $this->finding::detect();
+
+        if (is_callable($response)) {
+            app()->call($response);
+        }
     }
 
     public function uniqueId(): string

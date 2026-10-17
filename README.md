@@ -113,6 +113,47 @@ Finding actions can read the same data from the finding's readonly `context` pro
 $duplicateCustomerId = $this->context['duplicate_customer_id'];
 ```
 
+## Running Detection
+
+Run all discovered findings implementing `DataHealth\Contracts\CanDetect`:
+
+```bash
+php artisan health:detect
+```
+
+Detection runs synchronously by default, including findings without `#[Scheduled]`.
+Manual runs ignore cron timing and `data-health.scheduler.enabled`; `#[Async]` only
+affects queue routing when `--async` is supplied.
+
+| Parameter | Behavior |
+| --- | --- |
+| `findings...` | Optional finding keys or fully qualified class names. Omit to run all detectable findings. |
+| `--except=...` | Exclude a finding by key or class; repeat for multiple exclusions. |
+| `--async` | Dispatch one unique `DetectFinding` job per selected finding. |
+| `--queue=`, `--connection=` | Override queue routing; require `--async` and non-empty values. |
+
+```bash
+php artisan health:detect DuplicateCustomerFinding MissingInvoiceFinding
+php artisan health:detect --except=ExpensiveFinding
+php artisan health:detect --async --queue=data-health
+```
+
+Async runs use each finding's `#[Async]` queue and connection when present, falling
+back to the application's queue defaults. Command-line overrides take precedence
+independently. Configure a non-`sync` connection and a running queue worker for
+background execution. Jobs already queued or running for the same finding are
+skipped using Laravel's unique-job lock.
+
+All selectors, including exclusions, must identify registered detectable findings
+and are validated before execution begins. Duplicate selections run once, and
+exclusions take precedence. An empty selection succeeds without running detection.
+
+The command reports each finding and a summary of completed or queued detections,
+skips, and failures. Individual failures do not stop the remaining findings; the
+command returns a nonzero exit code if any detection or dispatch fails. Async
+success confirms dispatch, with results handled by the worker. If `detect()` returns
+a callable, the command and queued job invoke it through Laravel's container.
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.

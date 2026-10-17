@@ -46,6 +46,18 @@ the created path and refuses to overwrite an existing file unless `--force` is s
 - implement the generated method placeholders: detection returns `null`, and verification and resolution return `false`
 - inspect all options with `php artisan help health:make:finding`
 
+Run detection manually with `php artisan health:detect`:
+
+- runs all discovered `CanDetect` findings synchronously, regardless of their `Scheduled` or `Async` attributes, cron timing, or `data-health.scheduler.enabled`
+- pass optional finding keys or fully qualified class names to select findings; repeat `--except=key-or-class` to exclude findings
+- selectors and exclusions must identify registered detectable findings; all are validated before execution, duplicate selections run once, and exclusions take precedence
+- use `--async` to dispatch one unique `DetectFinding` job per selected finding; pending or running detections are skipped
+- async routing uses each finding's `Async` attribute or application defaults; `--queue=` and `--connection=` independently override routing and require `--async` and non-empty values
+- detection and dispatch failures are reported while remaining findings continue; the summary reports completed or queued, skipped, and failed detections, and any failure returns a nonzero exit code
+- async success confirms dispatch; workers handle detection results, and a non-`sync` connection is required for background execution
+- detection may return an integer, `null`, or a callable; the command and queued jobs invoke returned callables through Laravel's container
+- an empty selection succeeds without running detection; inspect all options with `php artisan help health:detect`
+
 ### 3. Configure scheduled detections
 
 - scheduled detections are enabled by default
@@ -104,6 +116,13 @@ Read before executing:
 - package `README.md`
 
 ## Example
+
+Run selected detections or queue all except an expensive finding:
+
+```bash
+php artisan health:detect DuplicateCustomerFinding MissingInvoiceFinding
+php artisan health:detect --async --queue=data-health --except=ExpensiveFinding
+```
 
 Queue a scheduled detection:
 
