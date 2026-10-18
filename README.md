@@ -113,13 +113,74 @@ Finding actions can read the same data from the finding's readonly `context` pro
 $duplicateCustomerId = $this->context['duplicate_customer_id'];
 ```
 
+## Interactive Console
+
+Open the Data Health suite to detect findings or browse and act on records:
+
+```bash
+php artisan health
+```
+
+The menu returns after each operation. It uses Termwind for terminal styling and
+Laravel Prompts for selection, with Laravel's fallback prompts on Windows.
+
+Browse active finding records in a terminal, or print one page without prompting:
+
+```bash
+php artisan health:records
+php artisan health:records --no-interaction
+php artisan health:records --status=all --finding=DuplicateCustomerFinding --per-page=10
+```
+
+The list shows record IDs, finding keys, models, statuses, urgency, and available
+actions. In interactive mode, navigate the table with the arrow keys and toggle
+rows with Space. Press `v` to verify, `r` to run the resolver, `i` to ignore, or `s`
+to mark checked records as solved. With nothing checked, the action applies to the
+highlighted row. Unsupported actions are
+skipped with a message. Enter inspects the highlighted record's context, worklist,
+and detection time. Actions run synchronously,
+report individual results, and refresh the list. Failures do not prevent the
+remaining selected records from running; any failure makes the browser and suite
+exit with code `1` when closed.
+
+Ignoring marks active records `ignored` without running verification or resolution
+logic or changing the affected model. It also works when the finding class is no
+longer registered. Already ignored or resolved records are skipped.
+
+Marking as solved sets an active or ignored record to `resolved` without running
+verification or resolution logic or changing the affected model. It requires no
+finding contract and works with unregistered finding keys. Already resolved
+records are skipped.
+
+The browser defaults to active records, 20 per page. Use `--status=active|ignored|resolved|all`,
+`--finding=key-or-class`, `--page=1`, and `--per-page=20` (1–100) to narrow the list.
+Press `a` to toggle all rows on the page, `n`/`p` for next/previous pages, `f` to
+refresh, or `q` to exit. Successful actions remove resolved records from an active-only
+list; ignored records leave that list too. Selection resets after an action, inspection, refresh, or page change. Narrow
+terminals hide secondary columns and truncate long values; inspection shows full values.
+
+Where raw keyboard input is unavailable, including Laravel's Windows fallback,
+the browser uses menus: choose **Verify records**, **Resolve records**, **Ignore records**,
+or **Mark records as solved**, then select
+supported records. An empty selection in this fallback runs no actions.
+
+Detection and record browsing are interactive by default when both standard input
+and standard output are attached to a terminal. Use `--no-interaction` (`-n`) to
+run detection without selection or print a records page and exit. Piped and
+redirected runs are non-interactive automatically. `--interactive` remains
+available to request interaction explicitly and cannot be combined with `-n`.
+The `health` suite menu requires interaction and rejects `--no-interaction`.
+
 ## Running Detection
 
-Run all discovered findings implementing `DataHealth\Contracts\CanDetect`:
+Run detection for discovered findings implementing `DataHealth\Contracts\CanDetect`:
 
 ```bash
 php artisan health:detect
 ```
+
+In a terminal, this opens the finding selector. Use `php artisan health:detect -n`
+to run all candidates immediately. Outside a terminal, detection runs without prompting.
 
 Detection runs synchronously by default, including findings without `#[Scheduled]`.
 Manual runs ignore cron timing and `data-health.scheduler.enabled`; `#[Async]` only
@@ -127,8 +188,11 @@ affects queue routing when `--async` is supplied.
 
 | Parameter | Behavior |
 | --- | --- |
-| `findings...` | Optional finding keys or fully qualified class names. Omit to run all detectable findings. |
+| `findings...` | Optional finding keys or fully qualified class names. Omit to include all detectable findings as candidates. |
 | `--except=...` | Exclude a finding by key or class; repeat for multiple exclusions. |
+| `--interactive` | Explicitly request finding selection, which is automatic in a terminal. |
+| `--no-interaction`, `-n` | Run the validated candidates without prompting. |
+| `--no-progress` | Hide the progress bar, for example in scripted runs. |
 | `--async` | Dispatch one unique `DetectFinding` job per selected finding. |
 | `--queue=`, `--connection=` | Override queue routing; require `--async` and non-empty values. |
 
@@ -136,7 +200,16 @@ affects queue routing when `--async` is supplied.
 php artisan health:detect DuplicateCustomerFinding MissingInvoiceFinding
 php artisan health:detect --except=ExpensiveFinding
 php artisan health:detect --async --queue=data-health
+php artisan health:detect --interactive
+php artisan health:detect --interactive --async --except=ExpensiveFinding
 ```
+
+The progress bar tracks selected finding classes, including completed, skipped,
+and failed runs, and displays the current finding. For `--async`, progress tracks
+dispatch rather than background job completion. Interactive selection starts with
+nothing selected; use Space to toggle findings and Enter to run them. Selecting
+nothing exits successfully without detection. `--interactive` requires interaction
+and cannot be combined with `--no-interaction`.
 
 Async runs use each finding's `#[Async]` queue and connection when present, falling
 back to the application's queue defaults. Command-line overrides take precedence
@@ -201,6 +274,9 @@ Run an action synchronously for a persisted finding record by its ID:
 php artisan verify 1
 php artisan resolve 1
 ```
+
+The namespaced aliases `health:verify 1` and `health:resolve 1` provide the same behavior.
+Use `health:records` in a terminal to select multiple records without typing IDs.
 
 The finding must implement `CanVerify` or `CanResolve` for the requested action.
 The commands use the manager to evaluate the method's return value: a boolean,

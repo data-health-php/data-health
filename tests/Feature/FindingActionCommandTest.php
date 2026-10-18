@@ -42,6 +42,16 @@ it('reports a missing finding record', function (string $operation) {
         ->assertFailed();
 })->with(['verify', 'resolve']);
 
+it('exposes namespaced aliases for finding actions', function (string $operation) {
+    $record = app(DataHealthManager::class)->found(new ActionableFinding($this->model, [
+        'scenario' => $operation.':boolean:true',
+    ]));
+
+    $this->artisan('health:'.$operation, ['id' => (string) $record->id])->assertSuccessful();
+
+    expect($record->fresh()->status)->toBe(RecordStatus::Resolved);
+})->with(['verify', 'resolve']);
+
 it('reports unsupported finding actions', function (string $operation, string $contract) {
     $record = app(DataHealthManager::class)->found(new BasicFinding($this->model));
 

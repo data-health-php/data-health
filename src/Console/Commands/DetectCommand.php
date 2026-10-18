@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DataHealth\Console\Commands;
 
 use DataHealth\Attributes\Async;
+use DataHealth\Console\Concerns\InteractsWithTerminal;
 use DataHealth\Contracts\CanDetect;
 use DataHealth\Finding;
 use DataHealth\FindingRegistry;
@@ -15,14 +16,21 @@ use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use InvalidArgumentException;
 use ReflectionClass;
+use Symfony\Component\Console\Formatter\OutputFormatter;
 use Throwable;
+
+use function Laravel\Prompts\multiselect;
 
 class DetectCommand extends Command
 {
+    use InteractsWithTerminal;
+
     /** @var string */
     protected $signature = 'health:detect
         {findings?* : Finding keys or fully qualified class names (defaults to all detectable findings)}
         {--except=* : Exclude a finding key or fully qualified class name}
+        {--interactive : Force finding selection (automatic in a terminal; -n disables it)}
+        {--no-progress : Hide the detection progress bar}
         {--async : Queue detection instead of running it synchronously}
         {--queue= : Override the detection queue (requires --async)}
         {--connection= : Override the queue connection (requires --async)}';
@@ -35,6 +43,8 @@ class DetectCommand extends Command
         $async = (bool) $this->option('async');
 
         try {
+            $interactive = $this->interactiveMode();
+
             $queue = $this->stringOption('queue');
             $connection = $this->stringOption('connection');
 
@@ -49,6 +59,12 @@ class DetectCommand extends Command
 
             $findings = $selectors === [] ? $registry->detectable()->all() : $this->selectFindings($registry, $selectors);
             $findings = array_diff_key($findings, $this->selectFindings($registry, $exclusions));
+
+            if ($interactive && $findings !== []) {
+                $keys = array_keys($findings);
+                $selected = multiselect('Select findings to detect', array_combine($keys, $keys));
+                $findings = array_intersect_key($findings, array_flip($selected));
+            }
         } catch (Throwable $exception) {
             $this->error($exception->getMessage());
 
@@ -64,12 +80,20 @@ class DetectCommand extends Command
         $completed = 0;
         $skipped = 0;
         $failed = 0;
+        $progress = $this->option('no-progress') ? null : $this->output->createProgressBar(count($findings));
+        $progress?->setFormat(' %current%/%max% [%bar%] %percent:3s%% %message%');
+        $progress?->setMessage($async ? 'Queueing detections' : 'Running detection');
+        $progress?->start();
 
         foreach ($findings as $key => $finding) {
+            $progress?->setMessage(OutputFormatter::escape($key));
+            $progress?->display();
+
             try {
                 if ($async) {
                     if (! $this->queueFinding($finding, $queue, $connection)) {
                         $skipped++;
+                        $progress?->clear();
                         $this->line("Skipped (already queued or running): {$key}");
 
                         continue;
@@ -79,11 +103,21 @@ class DetectCommand extends Command
                 }
 
                 $completed++;
+                $progress?->clear();
                 $this->info(($async ? 'Queued: ' : 'Completed: ').$key);
             } catch (Throwable $exception) {
                 $failed++;
+                $progress?->clear();
                 $this->error($key.': '.$exception->getMessage());
+            } finally {
+                $progress?->advance();
             }
+        }
+
+        if ($progress !== null) {
+            $progress->setMessage('Done');
+            $progress->finish();
+            $this->newLine(2);
         }
 
         $action = $async ? 'queued' : 'completed';

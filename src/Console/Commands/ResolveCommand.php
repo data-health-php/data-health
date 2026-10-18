@@ -17,6 +17,9 @@ class ResolveCommand extends Command
     /** @var string */
     protected $description = 'Resolve a Data Health finding record';
 
+    /** @var list<string> */
+    protected $aliases = ['health:resolve'];
+
     public function handle(DataHealthManager $manager): int
     {
         /** @var string $id */

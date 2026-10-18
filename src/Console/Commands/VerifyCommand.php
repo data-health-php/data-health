@@ -17,6 +17,9 @@ class VerifyCommand extends Command
     /** @var string */
     protected $description = 'Verify a Data Health finding record';
 
+    /** @var list<string> */
+    protected $aliases = ['health:verify'];
+
     public function handle(DataHealthManager $manager): int
     {
         /** @var string $id */

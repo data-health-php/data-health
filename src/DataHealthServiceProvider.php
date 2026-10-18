@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace DataHealth;
 
 use DataHealth\Console\Commands\DetectCommand;
+use DataHealth\Console\Commands\HealthCommand;
 use DataHealth\Console\Commands\MakeFindingCommand;
+use DataHealth\Console\Commands\RecordsCommand;
 use DataHealth\Console\Commands\ResolveCommand;
 use DataHealth\Console\Commands\VerifyCommand;
 use DataHealth\Listeners\DeleteFindingRecordsForDeletedModel;
@@ -40,7 +42,9 @@ class DataHealthServiceProvider extends ServiceProvider
 
         $this->commands([
             DetectCommand::class,
+            HealthCommand::class,
             MakeFindingCommand::class,
+            RecordsCommand::class,
             ResolveCommand::class,
             VerifyCommand::class,
         ]);

@@ -51,6 +51,9 @@ Run detection manually with `php artisan health:detect`:
 - runs all discovered `CanDetect` findings synchronously, regardless of their `Scheduled` or `Async` attributes, cron timing, or `data-health.scheduler.enabled`
 - pass optional finding keys or fully qualified class names to select findings; repeat `--except=key-or-class` to exclude findings
 - selectors and exclusions must identify registered detectable findings; all are validated before execution, duplicate selections run once, and exclusions take precedence
+- detection defaults to finding selection when standard input and output are terminals; `-n` / `--no-interaction` runs candidates without prompting, and piped or redirected runs are non-interactive automatically
+- `--interactive` explicitly requests selection after exclusions; an empty selection runs nothing, and combining this flag with `--no-interaction` is rejected
+- the progress bar tracks finding classes, including failures and skips, and shows the current finding; use `--no-progress` to hide it
 - use `--async` to dispatch one unique `DetectFinding` job per selected finding; pending or running detections are skipped
 - async routing uses each finding's `Async` attribute or application defaults; `--queue=` and `--connection=` independently override routing and require `--async` and non-empty values
 - detection and dispatch failures are reported while remaining findings continue; the summary reports completed or queued, skipped, and failed detections, and any failure returns a nonzero exit code
@@ -101,9 +104,23 @@ Run detection manually with `php artisan health:detect`:
 - read the constructor-provided data from the finding's readonly `context` property in verification and resolution logic
 - remember that context contributes to finding identity, so equivalent associative arrays resolve to the same record while different values create distinct records
 
-### 9. Verify or resolve a persisted finding
+### 9. Browse, verify, and resolve findings
 
+- open `php artisan health` for the interactive suite menu; detection opens a finding selector and records opens the interactive browser
+- `php artisan health:records` opens the record browser by default when standard input and output are terminals; `-n` / `--no-interaction` prints a page and exits, and piped or redirected runs also do not prompt
+- filter with `--status=active|ignored|resolved|all` and `--finding=key-or-class`; pagination defaults to `--page=1 --per-page=20`, with 1–100 records per page
+- in the interactive table, move with arrows and check rows with Space; `v` verifies and `r` resolves checked rows, or the highlighted row if none are checked; unsupported actions are skipped
+- `i` ignores checked active records, or the highlighted active record; it updates only record status, needs no finding contract, and works with unregistered finding keys
+- ignored records disappear from the active list; already ignored or resolved records are skipped, and fallback menus include **Ignore records**
+- `s` marks checked active or ignored records as solved, or the highlighted row if none are checked; it sets status to `resolved` without running action logic, requires no contract, and skips already resolved records
+- the manual solved action also works with unregistered finding keys and is available as **Mark records as solved** in fallback menus; `r` continues to execute the resolver
+- Enter inspects the highlighted record; `a` toggles all rows on the page, `n`/`p` changes pages, `f` refreshes, and `q` exits
+- actions run synchronously and refresh the list; selection resets after actions, inspection, refresh, or page changes
+- Laravel's fallback environments use menus and separate record selection; an empty fallback selection runs nothing
+- record failures do not stop the batch; the browser and suite preserve a nonzero exit code after any failed action
+- use `--no-interaction` for scripted detection or listing and `--no-progress` to hide detection progress; `health --no-interaction` is rejected
 - run `php artisan verify 1` or `php artisan resolve 1` with the finding record ID
+- `health:verify` and `health:resolve` are equivalent namespaced aliases
 - implement `CanVerify` or `CanResolve` on the finding for the requested action
 - actions run synchronously through the manager, which evaluates booleans, container-invoked callables, and container-resolved `Verifier` / `Resolver` handler classes
 - a `true` result marks the record resolved and exits with code `0`; `false` leaves its status unchanged and exits with code `1`

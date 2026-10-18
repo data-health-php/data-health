@@ -7,12 +7,15 @@ namespace DataHealth\Tests\Feature;
 use DataHealth\Attributes\Async;
 use DataHealth\Attributes\Key;
 use DataHealth\Attributes\Scheduled;
+use DataHealth\Console\Commands\DetectCommand;
 use DataHealth\Contracts\CanDetect;
 use DataHealth\Contracts\Detector;
 use DataHealth\Finding;
 use DataHealth\Jobs\DetectFinding;
 use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use RuntimeException;
@@ -58,6 +61,109 @@ it('selects findings by key or class and runs each once', function () {
 
     expect(CommandDetectableFinding::$runs)->toBe(1)
         ->and(CommandScheduledFinding::$runs)->toBe(0);
+});
+
+it('interactively detects only the selected findings', function () {
+    $this->artisan('health:detect', ['--interactive' => true])
+        ->expectsChoice('Select findings to detect', ['command-detectable'], [
+            'command-detectable' => 'command-detectable',
+            'CommandScheduledFinding' => 'CommandScheduledFinding',
+        ])
+        ->expectsOutputToContain('1 completed, 0 skipped, 0 failed')
+        ->assertSuccessful();
+
+    expect(CommandDetectableFinding::$runs)->toBe(1)
+        ->and(CommandScheduledFinding::$runs)->toBe(0);
+});
+
+it('defaults to finding selection when running in a terminal', function () {
+    app(Kernel::class)->registerCommand(new class extends DetectCommand
+    {
+        protected function hasTerminal(): bool
+        {
+            return true;
+        }
+    });
+
+    $this->artisan('health:detect')
+        ->expectsQuestion('Select findings to detect', ['command-detectable'])
+        ->assertSuccessful();
+
+    expect(CommandDetectableFinding::$runs)->toBe(1)
+        ->and(CommandScheduledFinding::$runs)->toBe(0);
+});
+
+it('honors no interaction even when detection runs in a terminal', function () {
+    app(Kernel::class)->registerCommand(new class extends DetectCommand
+    {
+        protected function hasTerminal(): bool
+        {
+            return true;
+        }
+    });
+
+    $this->artisan('health:detect', ['--no-interaction' => true])->assertSuccessful();
+
+    expect(CommandDetectableFinding::$runs)->toBe(1)
+        ->and(CommandScheduledFinding::$runs)->toBe(1);
+});
+
+it('applies exclusions before offering interactive choices', function () {
+    Queue::fake();
+
+    $this->artisan('health:detect', ['--interactive' => true, '--except' => ['command-detectable'], '--async' => true])
+        ->expectsChoice('Select findings to detect', ['CommandScheduledFinding'], [
+            'CommandScheduledFinding' => 'CommandScheduledFinding',
+        ])
+        ->assertSuccessful();
+
+    Queue::assertPushed(DetectFinding::class, 1);
+    Queue::assertPushed(DetectFinding::class, fn (DetectFinding $job): bool => $job->finding === CommandScheduledFinding::class);
+});
+
+it('allows leaving the interactive detection selection empty', function () {
+    $this->artisan('health:detect', ['--interactive' => true])
+        ->expectsQuestion('Select findings to detect', [])
+        ->expectsOutput('No detectable findings selected.')
+        ->assertSuccessful();
+
+    expect(CommandDetectableFinding::$runs)->toBe(0)
+        ->and(CommandScheduledFinding::$runs)->toBe(0);
+});
+
+it('rejects interactive detection without interaction', function () {
+    $this->artisan('health:detect', ['--interactive' => true, '--no-interaction' => true])
+        ->expectsOutput('--interactive requires an interactive terminal.')
+        ->assertFailed();
+
+    expect(CommandDetectableFinding::$runs)->toBe(0);
+});
+
+it('finishes detection progress even when a finding fails', function () {
+    $this->withoutMockingConsoleOutput();
+    CommandDetectableFinding::$fail = true;
+
+    expect(Artisan::call('health:detect'))->toBe(1)
+        ->and(Artisan::output())->toContain('2/2', '100%', '1 completed, 0 skipped, 1 failed');
+});
+
+it('can disable detection progress for scripts', function () {
+    $this->withoutMockingConsoleOutput();
+
+    expect(Artisan::call('health:detect', ['--no-progress' => true]))->toBe(0)
+        ->and(Artisan::output())->not->toContain('100%');
+});
+
+it('finishes progress when all queued detections are skipped', function () {
+    $this->withoutMockingConsoleOutput();
+    Queue::fake();
+
+    Artisan::call('health:detect', ['--async' => true]);
+
+    expect(Artisan::call('health:detect', ['--async' => true]))->toBe(0)
+        ->and(Artisan::output())->toContain('2/2', '100%', '0 queued, 2 skipped, 0 failed');
+
+    Queue::assertPushed(DetectFinding::class, 2);
 });
 
 it('excludes findings by key or class', function (string $excluded) {
