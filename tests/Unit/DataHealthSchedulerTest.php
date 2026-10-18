@@ -5,6 +5,7 @@ declare(strict_types=1);
 use DataHealth\Attributes\Async;
 use DataHealth\Attributes\Scheduled;
 use DataHealth\Contracts\CanDetect;
+use DataHealth\Contracts\Detector;
 use DataHealth\DataHealthScheduler;
 use DataHealth\Finding;
 use DataHealth\FindingRegistry;
@@ -81,6 +82,20 @@ it('queues asynchronous scheduled detections once while pending', function () {
 
     expect(AsynchronousScheduledFinding::$detected)->toBeFalse();
 });
+
+it('executes handler and callable results from scheduled detections', function (string $finding) {
+    $schedule = app(Schedule::class);
+    $eventCount = count($schedule->events());
+
+    (new DataHealthScheduler(
+        new SchedulerFindingRegistry([$finding]),
+        $schedule,
+    ))->schedule();
+
+    $schedule->events()[$eventCount]->run($this->app);
+
+    expect(ScheduledFinding::$detected)->toBeTrue();
+})->with([ScheduledHandlerFinding::class, ScheduledCallableFinding::class]);
 
 it('runs an asynchronous detection from its unique queued job', function () {
     $job = new DetectFinding(AsynchronousScheduledFinding::class);
@@ -195,3 +210,29 @@ final class UnscheduledFinding extends Finding implements CanDetect
 
 #[Scheduled('15 * * * *')]
 final class NonDetectableFinding extends Finding {}
+
+#[Scheduled('15 * * * *')]
+final class ScheduledHandlerFinding extends Finding implements CanDetect
+{
+    public static function detect(): string
+    {
+        return ScheduledDetector::class;
+    }
+}
+
+final class ScheduledDetector implements Detector
+{
+    public function detect(): ?int
+    {
+        return ScheduledFinding::detect();
+    }
+}
+
+#[Scheduled('15 * * * *')]
+final class ScheduledCallableFinding extends Finding implements CanDetect
+{
+    public static function detect(): callable
+    {
+        return ScheduledFinding::detect(...);
+    }
+}

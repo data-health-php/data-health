@@ -7,7 +7,9 @@ namespace DataHealth\Contracts;
 interface CanDetect
 {
     /**
-     * @return int|(callable(mixed...): (int|null))|null
+     * Return a Detector class name to delegate detection to a dedicated class.
+     *
+     * @return int|(callable(mixed...): (int|null))|string|null
      */
-    public static function detect(): int|callable|null;
+    public static function detect(): int|callable|string|null;
 }

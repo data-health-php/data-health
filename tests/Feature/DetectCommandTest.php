@@ -8,6 +8,7 @@ use DataHealth\Attributes\Async;
 use DataHealth\Attributes\Key;
 use DataHealth\Attributes\Scheduled;
 use DataHealth\Contracts\CanDetect;
+use DataHealth\Contracts\Detector;
 use DataHealth\Finding;
 use DataHealth\Jobs\DetectFinding;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -196,6 +197,39 @@ it('executes callable detection results in queued jobs', function () {
     expect(CommandScheduledFinding::$runs)->toBe(1);
 });
 
+it('resolves detector classes through the container for manual and queued detection', function (bool $async, bool $found) {
+    file_put_contents($this->detectionDirectory.'/CommandDetectorFinding.php', '<?php');
+    $filesystem = Mockery::mock(Filesystem::class)->makePartial();
+    $filesystem->shouldReceive('exists')->once()->with('detector-input')->andReturn($found);
+    app()->instance(Filesystem::class, $filesystem);
+
+    $this->artisan('health:detect', [
+        'findings' => [CommandDetectorFinding::class],
+        '--async' => $async,
+    ])->assertSuccessful();
+})->with([false, true])->with([false, true]);
+
+it('reports invalid detector classes as detection failures', function (string $handler) {
+    file_put_contents($this->detectionDirectory.'/CommandInvalidDetectorFinding.php', '<?php');
+    CommandInvalidDetectorFinding::$handler = $handler;
+
+    $this->artisan('health:detect', ['findings' => [CommandInvalidDetectorFinding::class]])
+        ->expectsOutputToContain(CommandInvalidDetectorFinding::class.' does not implement Detector')
+        ->expectsOutputToContain('0 completed, 0 skipped, 1 failed')
+        ->assertFailed();
+})->with([CommandPlainFinding::class, 'MissingDetector']);
+
+it('reports exceptions thrown by detector classes', function () {
+    file_put_contents($this->detectionDirectory.'/CommandDetectorFinding.php', '<?php');
+    $detector = Mockery::mock(CommandDetector::class);
+    $detector->shouldReceive('detect')->once()->andThrow(new RuntimeException('Detector failed.'));
+    app()->instance(CommandDetector::class, $detector);
+
+    $this->artisan('health:detect', ['findings' => [CommandDetectorFinding::class]])
+        ->expectsOutputToContain('Detector failed.')
+        ->assertFailed();
+});
+
 #[Key('command-detectable')]
 final class CommandDetectableFinding extends Finding implements CanDetect
 {
@@ -233,3 +267,31 @@ final class CommandScheduledFinding extends Finding implements CanDetect
 }
 
 final class CommandPlainFinding extends Finding {}
+
+final class CommandDetectorFinding extends Finding implements CanDetect
+{
+    public static function detect(): string
+    {
+        return CommandDetector::class;
+    }
+}
+
+final class CommandInvalidDetectorFinding extends Finding implements CanDetect
+{
+    public static string $handler;
+
+    public static function detect(): string
+    {
+        return self::$handler;
+    }
+}
+
+class CommandDetector implements Detector
+{
+    public function __construct(private readonly Filesystem $filesystem) {}
+
+    public function detect(): ?int
+    {
+        return $this->filesystem->exists('detector-input') ? 1 : null;
+    }
+}

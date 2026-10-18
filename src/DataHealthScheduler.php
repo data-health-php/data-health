@@ -43,7 +43,7 @@ class DataHealthScheduler
         $async = $this->async($finding);
 
         $event = $async === null
-            ? $this->schedule->call($finding::detect(...))
+            ? $this->schedule->call((new DetectFinding($finding))->handle(...))
             : $this->schedule->job(
                 new DetectFinding($finding),
                 $async->queue,

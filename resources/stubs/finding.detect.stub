@@ -1,4 +1,4 @@
-    public static function detect(): int|callable|null
+    public static function detect(): int|callable|string|null
     {
         // Report matching models with static::found($model, $context).
         return null;

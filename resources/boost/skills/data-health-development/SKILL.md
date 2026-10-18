@@ -55,7 +55,9 @@ Run detection manually with `php artisan health:detect`:
 - async routing uses each finding's `Async` attribute or application defaults; `--queue=` and `--connection=` independently override routing and require `--async` and non-empty values
 - detection and dispatch failures are reported while remaining findings continue; the summary reports completed or queued, skipped, and failed detections, and any failure returns a nonzero exit code
 - async success confirms dispatch; workers handle detection results, and a non-`sync` connection is required for background execution
-- detection may return an integer, `null`, or a callable; the command and queued jobs invoke returned callables through Laravel's container
+- detection may return an integer, `null`, a callable, or a class string implementing `DataHealth\Contracts\Detector`
+- manual, scheduled, and queued detections invoke returned callables through Laravel's container and resolve detector classes through the container, including constructor dependencies
+- implement an instance `detect(): ?int` method on detector classes, report matches with the finding's `found()` method, and return an optional count; invalid detector classes fail detection
 - an empty selection succeeds without running detection; inspect all options with `php artisan help health:detect`
 
 ### 3. Configure scheduled detections
@@ -144,9 +146,40 @@ use DataHealth\Finding;
 #[Scheduled('*/5 * * * *')]
 class DuplicateCustomerFinding extends Finding implements CanDetect
 {
-    public static function detect(): int|callable|null
+    public static function detect(): int|callable|string|null
     {
         return null;
+    }
+}
+```
+
+Delegate detection to a dedicated class:
+
+```php
+use App\Models\Customer;
+use DataHealth\Contracts\CanDetect;
+use DataHealth\Contracts\Detector;
+use DataHealth\Finding;
+
+class MissingEmailFinding extends Finding implements CanDetect
+{
+    public static function detect(): string
+    {
+        return MissingEmailDetector::class;
+    }
+}
+
+class MissingEmailDetector implements Detector
+{
+    public function detect(): ?int
+    {
+        $customers = Customer::query()->whereNull('email')->get();
+
+        foreach ($customers as $customer) {
+            MissingEmailFinding::found($customer);
+        }
+
+        return $customers->count();
     }
 }
 ```
@@ -188,7 +221,7 @@ use DataHealth\Finding;
 class DuplicateCustomerFinding extends Finding implements CanDetect
 {
     #[Description('Searches customer records for duplicate email addresses.')]
-    public static function detect(): int|callable|null
+    public static function detect(): int|callable|string|null
     {
         return null;
     }

@@ -151,8 +151,47 @@ exclusions take precedence. An empty selection succeeds without running detectio
 The command reports each finding and a summary of completed or queued detections,
 skips, and failures. Individual failures do not stop the remaining findings; the
 command returns a nonzero exit code if any detection or dispatch fails. Async
-success confirms dispatch, with results handled by the worker. If `detect()` returns
-a callable, the command and queued job invoke it through Laravel's container.
+success confirms dispatch, with results handled by the worker. Detection methods may
+return an integer, `null`, a callable, or a class string implementing
+`DataHealth\Contracts\Detector`. Returned callables are invoked through Laravel's
+container, and detector classes are resolved through the container before their
+instance `detect(): ?int` method runs. Constructor injection is supported. This works
+for manual, scheduled, and queued detection.
+
+Move detection into a dedicated class by returning its class name from the finding:
+
+```php
+use App\Models\Customer;
+use DataHealth\Contracts\CanDetect;
+use DataHealth\Contracts\Detector;
+use DataHealth\Finding;
+
+class MissingEmailFinding extends Finding implements CanDetect
+{
+    public static function detect(): string
+    {
+        return MissingEmailDetector::class;
+    }
+}
+
+class MissingEmailDetector implements Detector
+{
+    public function detect(): ?int
+    {
+        $customers = Customer::query()->whereNull('email')->get();
+
+        foreach ($customers as $customer) {
+            MissingEmailFinding::found($customer);
+        }
+
+        return $customers->count();
+    }
+}
+```
+
+Detector classes return an optional count and report matches with the finding's
+`found()` method. A class string that does not implement `Detector` causes detection
+to fail.
 
 ## Verifying and Resolving Findings
 
