@@ -43,7 +43,7 @@ or `data-health-config` tag.
 ## Usage
 
 Data Health discovers finding classes in your application and supports scheduled or
-queued detection, verification and resolution workflows, urgency and worklist metadata,
+queued detection, synchronous verification and resolution, urgency and worklist metadata,
 and automatic cleanup when related Eloquent models are deleted.
 
 Generate a finding class with Artisan:
@@ -81,7 +81,7 @@ and method placeholders.
 | `--key=`, `--description=`, `--worklist=` | Add the corresponding class metadata attribute. |
 | `--urgency=` | Set `immediate`, `soon`, `normal`, or `deferred` urgency. |
 | `--schedule="*/5 * * * *"` | Add a cron schedule and detection method. |
-| `--async` | Queue scheduled detection; requires `--schedule`. |
+| `--async` | Add `#[Async]` to `detect()` and add detection if needed; no schedule required. |
 | `--queue=`, `--connection=` | Set detection queue routing; require `--async`. |
 | `--auto-resolve` | Add automatic resolution and a resolution method. |
 | `--auto-verify=0` | Add automatic verification and a verification method; the delay is a non-negative number of minutes. |
@@ -182,9 +182,10 @@ php artisan health:detect
 In a terminal, this opens the finding selector. Use `php artisan health:detect -n`
 to run all candidates immediately. Outside a terminal, detection runs without prompting.
 
-Detection runs synchronously by default, including findings without `#[Scheduled]`.
-Manual runs ignore cron timing and `data-health.scheduler.enabled`; `#[Async]` only
-affects queue routing when `--async` is supplied.
+Detection honors `#[Async]` on `detect()` and otherwise runs
+synchronously, including findings without `#[Scheduled]`. Manual runs ignore cron
+timing and `data-health.scheduler.enabled`. Use `--sync` to force synchronous
+detection or `--async` to queue every selected finding. These flags cannot be combined.
 
 | Parameter | Behavior |
 | --- | --- |
@@ -193,7 +194,8 @@ affects queue routing when `--async` is supplied.
 | `--interactive` | Explicitly request finding selection, which is automatic in a terminal. |
 | `--no-interaction`, `-n` | Run the validated candidates without prompting. |
 | `--no-progress` | Hide the progress bar, for example in scripted runs. |
-| `--async` | Dispatch one unique `DetectFinding` job per selected finding. |
+| `--async` | Dispatch one unique `DetectFinding` job per selected finding, regardless of attributes. |
+| `--sync` | Run all selected detections synchronously, ignoring `#[Async]`. |
 | `--queue=`, `--connection=` | Override queue routing; require `--async` and non-empty values. |
 
 ```bash
@@ -211,8 +213,8 @@ nothing selected; use Space to toggle findings and Enter to run them. Selecting
 nothing exits successfully without detection. `--interactive` requires interaction
 and cannot be combined with `--no-interaction`.
 
-Async runs use each finding's `#[Async]` queue and connection when present, falling
-back to the application's queue defaults. Command-line overrides take precedence
+Async runs use the queue and connection from `#[Async]` on `detect()` when present;
+omitted values use the application's queue defaults. Command-line overrides take precedence
 independently. Configure a non-`sync` connection and a running queue worker for
 background execution. Jobs already queued or running for the same finding are
 skipped using Laravel's unique-job lock.
@@ -268,7 +270,7 @@ to fail.
 
 ## Verifying and Resolving Findings
 
-Run an action synchronously for a persisted finding record by its ID:
+Run an action for a persisted finding record by its ID:
 
 ```bash
 php artisan verify 1
@@ -283,10 +285,50 @@ The commands use the manager to evaluate the method's return value: a boolean,
 a callable invoked through Laravel's container, or a `Verifier` / `Resolver`
 handler class resolved through the container.
 
+Verification and resolution always run synchronously and return immediate results.
 A `true` result marks the record resolved, reports success, and exits with code `0`.
 A `false` result leaves its status unchanged and exits with code `1`. Missing
 records, unsupported actions, and exceptions also report an error and exit with
 code `1`. The ID identifies the finding record, rather than its related model.
+
+## Asynchronous Detection
+
+Apply `DataHealth\Attributes\Async` only to a finding's `detect()` method:
+
+```php
+use DataHealth\Attributes\Async;
+use DataHealth\Contracts\CanDetect;
+use DataHealth\Finding;
+
+class MissingEmailFinding extends Finding implements CanDetect
+{
+    #[Async(queue: 'data-health', connection: 'redis')]
+    public static function detect(): string
+    {
+        return MissingEmailDetector::class;
+    }
+}
+```
+
+This uses the detector from the example above. The attribute queues detection
+through `health:detect` and scheduled detection. Direct PHP calls such as
+`MyFinding::detect()` remain synchronous. Add `#[Scheduled]` to the class when
+periodic detection is wanted; `#[Async]` alone does not schedule execution.
+
+Class-level `#[Async]` and attributes on other methods are rejected during finding
+discovery. Move existing class-level attributes onto `detect()`. The generator's
+`--async` option now adds the method attribute and detection capability without
+requiring a schedule.
+
+`DataHealth::verify($record)` and `DataHealth::resolve($record)` return `bool`.
+Their commands and record-browser actions provide immediate success or failure;
+there are no async execution flags for these actions. `#[AutoResolve]` also runs
+resolution immediately. `#[AutoVerify]` remains separate automation that queues
+verification after commit, preserves its delay and active-record check, and uses
+application queue defaults. Detection's `#[Async]` does not configure it.
+
+Use a non-`sync` queue connection and run its worker for background detection.
+Laravel's `sync` connection executes dispatched jobs immediately.
 
 ## Changelog
 

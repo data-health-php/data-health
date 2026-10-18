@@ -6,7 +6,7 @@ namespace DataHealth\Attributes;
 
 use Attribute;
 
-#[Attribute(Attribute::TARGET_CLASS)]
+#[Attribute(Attribute::TARGET_METHOD)]
 class Async
 {
     public function __construct(

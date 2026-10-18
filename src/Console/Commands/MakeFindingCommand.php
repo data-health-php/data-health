@@ -25,9 +25,9 @@ class MakeFindingCommand extends GeneratorCommand
         {--urgency= : immediate, soon, normal, or deferred}
         {--worklist= : The worklist for new records}
         {--schedule= : A cron expression (also adds detection)}
-        {--async : Queue scheduled detection}
-        {--queue= : The asynchronous detection queue}
-        {--connection= : The asynchronous detection connection}
+        {--async : Queue detection (also adds detection)}
+        {--queue= : The detection queue}
+        {--connection= : The detection queue connection}
         {--auto-resolve : Automatically resolve new records (also adds resolution)}
         {--auto-verify= : Automatically verify new records after this many minutes (also adds verification)}
         {--directory= : A directory configured in data-health.directories (defaults to the first)}
@@ -126,6 +126,8 @@ class MakeFindingCommand extends GeneratorCommand
             $attributes[] = '#['.$attribute.'('.$enum.'::'.strtoupper($urgency).')]';
         }
 
+        $asyncAttribute = null;
+
         if ($this->option('async')) {
             $attribute = $import('DataHealth\\Attributes\\Async');
             $arguments = [];
@@ -136,7 +138,7 @@ class MakeFindingCommand extends GeneratorCommand
                 }
             }
 
-            $attributes[] = '#['.$attribute.($arguments === [] ? '' : '('.implode(', ', $arguments).')').']';
+            $asyncAttribute = '#['.$attribute.($arguments === [] ? '' : '('.implode(', ', $arguments).')').']';
         }
 
         if ($this->option('auto-resolve')) {
@@ -148,7 +150,7 @@ class MakeFindingCommand extends GeneratorCommand
         }
 
         $capabilities = [
-            'detect' => in_array(CanDetect::class, $this->defaultInterfaces, true) || $this->option('detect') || $this->option('schedule') !== null,
+            'detect' => in_array(CanDetect::class, $this->defaultInterfaces, true) || $this->option('detect') || $this->option('schedule') !== null || $this->option('async'),
             'verify' => in_array(CanVerify::class, $this->defaultInterfaces, true) || $this->option('verify') || $this->option('auto-verify') !== null,
             'resolve' => in_array(CanResolve::class, $this->defaultInterfaces, true) || $this->option('resolve') || $this->option('auto-resolve'),
         ];
@@ -156,7 +158,8 @@ class MakeFindingCommand extends GeneratorCommand
         foreach ($capabilities as $method => $enabled) {
             if ($enabled) {
                 $contracts[] = $import('DataHealth\\Contracts\\Can'.ucfirst($method));
-                $methods[] = rtrim($this->files->get(__DIR__.'/../../../resources/stubs/finding.'.$method.'.stub'));
+                $source = rtrim($this->files->get(__DIR__.'/../../../resources/stubs/finding.'.$method.'.stub'));
+                $methods[] = ($method === 'detect' && $asyncAttribute !== null ? '    '.$asyncAttribute."\n" : '').$source;
             }
         }
 
@@ -224,10 +227,6 @@ class MakeFindingCommand extends GeneratorCommand
 
         if ($this->option('auto-verify') !== null && filter_var($this->option('auto-verify'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]) === false) {
             throw new InvalidArgumentException('The automatic verification delay must be a non-negative integer.');
-        }
-
-        if ($this->option('async') && $this->option('schedule') === null) {
-            throw new InvalidArgumentException('--async requires --schedule.');
         }
 
         if (($this->option('queue') !== null || $this->option('connection') !== null) && ! $this->option('async')) {

@@ -186,12 +186,12 @@ final class InvalidScheduleFinding extends Finding implements CanDetect
     }
 }
 
-#[Async(queue: 'data-health', connection: 'redis')]
 #[Scheduled('30 * * * *')]
 final class AsynchronousScheduledFinding extends Finding implements CanDetect
 {
     public static bool $detected = false;
 
+    #[Async(queue: 'data-health', connection: 'redis')]
     public static function detect(): int
     {
         self::$detected = true;

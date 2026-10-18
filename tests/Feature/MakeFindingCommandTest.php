@@ -125,20 +125,25 @@ it('generates metadata and infers capabilities required by attributes', function
         ->and($class::getUrgency())->toBe(FindingUrgency::SOON)
         ->and($class::getWorklist())->toBe('data-quality')
         ->and($reflection->getAttributes(Scheduled::class)[0]->newInstance()->expression)->toBe('*/5 * * * *')
-        ->and($reflection->getAttributes(Async::class)[0]->newInstance())->toEqual(new Async('data-health', 'redis'))
+        ->and($reflection->getMethod('detect')->getAttributes(Async::class)[0]->newInstance())->toEqual(new Async('data-health', 'redis'))
         ->and($reflection->getAttributes(AutoVerify::class)[0]->newInstance()->delay)->toBe(5)
         ->and($reflection->getAttributes(AutoResolve::class))->toHaveCount(1);
 });
 
-it('generates queued detections using the default queue routing', function () {
+it('generates queued detection on the method without requiring a schedule or default interfaces', function () {
+    config()->set('data-health.make_finding.interfaces', []);
+
     $this->artisan('health:make:finding', [
         'name' => 'QueuedFinding',
-        '--schedule' => '0 * * * *',
         '--async' => true,
     ])->assertSuccessful();
 
-    expect(file_get_contents(base_path('app/DataHealth/QueuedFinding.php')))
-        ->toContain('#[Async]', 'implements CanDetect');
+    require base_path('app/DataHealth/QueuedFinding.php');
+    $reflection = new ReflectionClass('App\\DataHealth\\QueuedFinding');
+
+    expect($reflection->getAttributes(Async::class))->toBe([])
+        ->and($reflection->getMethod('detect')->getAttributes(Async::class)[0]->newInstance())->toEqual(new Async)
+        ->and($reflection->implementsInterface(CanDetect::class))->toBeTrue();
 });
 
 it('avoids import collisions with the generated class name', function (string $name, array $options) {
@@ -225,7 +230,6 @@ it('rejects invalid options without creating files', function (array $options, s
     'cron expression' => [['--schedule' => 'not a cron'], 'Invalid schedule'],
     'negative delay' => [['--auto-verify' => '-1'], 'non-negative integer'],
     'fractional delay' => [['--auto-verify' => '1.5'], 'non-negative integer'],
-    'async without schedule' => [['--async' => true], '--async requires --schedule'],
     'queue without async' => [['--queue' => 'health'], '--queue and --connection require --async'],
     'connection without async' => [['--connection' => 'redis'], '--queue and --connection require --async'],
     'unknown directory' => [['--directory' => 'unknown'], 'not configured'],

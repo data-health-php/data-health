@@ -140,7 +140,13 @@ class FindingRegistry
                     return false;
                 }
 
-                return ! (new ReflectionClass($class))->isAbstract();
+                if ((new ReflectionClass($class))->isAbstract()) {
+                    return false;
+                }
+
+                $class::getAsync();
+
+                return true;
             })
             ->mapWithKeys(fn (string $class) => [$class::key() => $class]);
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace DataHealth\Console\Commands;
 
-use DataHealth\Attributes\Async;
 use DataHealth\Console\Concerns\InteractsWithTerminal;
 use DataHealth\Contracts\CanDetect;
 use DataHealth\Finding;
@@ -15,7 +14,6 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use InvalidArgumentException;
-use ReflectionClass;
 use Symfony\Component\Console\Formatter\OutputFormatter;
 use Throwable;
 
@@ -31,7 +29,8 @@ class DetectCommand extends Command
         {--except=* : Exclude a finding key or fully qualified class name}
         {--interactive : Force finding selection (automatic in a terminal; -n disables it)}
         {--no-progress : Hide the detection progress bar}
-        {--async : Queue detection instead of running it synchronously}
+        {--async : Queue all selected detections}
+        {--sync : Run all selected detections synchronously, ignoring Async attributes}
         {--queue= : Override the detection queue (requires --async)}
         {--connection= : Override the queue connection (requires --async)}';
 
@@ -40,15 +39,20 @@ class DetectCommand extends Command
 
     public function handle(FindingRegistry $registry): int
     {
-        $async = (bool) $this->option('async');
+        $forceAsync = (bool) $this->option('async');
+        $forceSync = (bool) $this->option('sync');
 
         try {
+            if ($forceAsync && $forceSync) {
+                throw new InvalidArgumentException('--async and --sync cannot be combined.');
+            }
+
             $interactive = $this->interactiveMode();
 
             $queue = $this->stringOption('queue');
             $connection = $this->stringOption('connection');
 
-            if (! $async && ($queue !== null || $connection !== null)) {
+            if (! $forceAsync && ($queue !== null || $connection !== null)) {
                 throw new InvalidArgumentException('--queue and --connection require --async.');
             }
 
@@ -78,11 +82,13 @@ class DetectCommand extends Command
         }
 
         $completed = 0;
+        $queued = 0;
         $skipped = 0;
         $failed = 0;
+        $hasAsync = $forceAsync;
         $progress = $this->option('no-progress') ? null : $this->output->createProgressBar(count($findings));
         $progress?->setFormat(' %current%/%max% [%bar%] %percent:3s%% %message%');
-        $progress?->setMessage($async ? 'Queueing detections' : 'Running detection');
+        $progress?->setMessage('Running detection');
         $progress?->start();
 
         foreach ($findings as $key => $finding) {
@@ -90,6 +96,9 @@ class DetectCommand extends Command
             $progress?->display();
 
             try {
+                $async = ! $forceSync && ($forceAsync || $finding::getAsync() !== null);
+                $hasAsync = $hasAsync || $async;
+
                 if ($async) {
                     if (! $this->queueFinding($finding, $queue, $connection)) {
                         $skipped++;
@@ -102,7 +111,12 @@ class DetectCommand extends Command
                     (new DetectFinding($finding))->handle();
                 }
 
-                $completed++;
+                if ($async) {
+                    $queued++;
+                } else {
+                    $completed++;
+                }
+
                 $progress?->clear();
                 $this->info(($async ? 'Queued: ' : 'Completed: ').$key);
             } catch (Throwable $exception) {
@@ -120,8 +134,10 @@ class DetectCommand extends Command
             $this->newLine(2);
         }
 
-        $action = $async ? 'queued' : 'completed';
-        $this->line("Detection summary: {$completed} {$action}, {$skipped} skipped, {$failed} failed.");
+        $summary = $completed > 0 && $queued > 0
+            ? "{$completed} completed, {$queued} queued"
+            : ($queued > 0 || ($completed === 0 && $hasAsync) ? "{$queued} queued" : "{$completed} completed");
+        $this->line("Detection summary: {$summary}, {$skipped} skipped, {$failed} failed.");
 
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
     }
@@ -150,8 +166,7 @@ class DetectCommand extends Command
     /** @param class-string<Finding&CanDetect> $finding */
     private function queueFinding(string $finding, ?string $queue, ?string $connection): bool
     {
-        $attribute = (new ReflectionClass($finding))->getAttributes(Async::class)[0] ?? null;
-        $async = $attribute?->newInstance();
+        $async = $finding::getAsync();
 
         $job = (new DetectFinding($finding))
             ->onQueue($queue ?? $async?->queue)

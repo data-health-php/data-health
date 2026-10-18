@@ -41,11 +41,11 @@ afterEach(function () {
     (new Filesystem)->deleteDirectory($this->detectionDirectory);
 });
 
-it('runs every detectable finding synchronously regardless of schedule and async attributes', function () {
+it('can force every detectable finding to run synchronously', function () {
     config()->set('data-health.scheduler.enabled', false);
     Queue::fake();
 
-    $this->artisan('health:detect')
+    $this->artisan('health:detect', ['--sync' => true])
         ->expectsOutputToContain('2 completed, 0 skipped, 0 failed')
         ->assertSuccessful();
 
@@ -102,7 +102,7 @@ it('honors no interaction even when detection runs in a terminal', function () {
         }
     });
 
-    $this->artisan('health:detect', ['--no-interaction' => true])->assertSuccessful();
+    $this->artisan('health:detect', ['--no-interaction' => true, '--sync' => true])->assertSuccessful();
 
     expect(CommandDetectableFinding::$runs)->toBe(1)
         ->and(CommandScheduledFinding::$runs)->toBe(1);
@@ -143,14 +143,14 @@ it('finishes detection progress even when a finding fails', function () {
     $this->withoutMockingConsoleOutput();
     CommandDetectableFinding::$fail = true;
 
-    expect(Artisan::call('health:detect'))->toBe(1)
+    expect(Artisan::call('health:detect', ['--sync' => true]))->toBe(1)
         ->and(Artisan::output())->toContain('2/2', '100%', '1 completed, 0 skipped, 1 failed');
 });
 
 it('can disable detection progress for scripts', function () {
     $this->withoutMockingConsoleOutput();
 
-    expect(Artisan::call('health:detect', ['--no-progress' => true]))->toBe(0)
+    expect(Artisan::call('health:detect', ['--no-progress' => true, '--sync' => true]))->toBe(0)
         ->and(Artisan::output())->not->toContain('100%');
 });
 
@@ -167,7 +167,7 @@ it('finishes progress when all queued detections are skipped', function () {
 });
 
 it('excludes findings by key or class', function (string $excluded) {
-    $this->artisan('health:detect', ['--except' => [$excluded]])->assertSuccessful();
+    $this->artisan('health:detect', ['--except' => [$excluded], '--sync' => true])->assertSuccessful();
 
     expect(CommandDetectableFinding::$runs)->toBe(0)
         ->and(CommandScheduledFinding::$runs)->toBe(1);
@@ -223,7 +223,7 @@ it('succeeds when no findings are discovered', function () {
 it('continues after a detection failure and returns a failing exit code', function () {
     CommandDetectableFinding::$fail = true;
 
-    $this->artisan('health:detect')
+    $this->artisan('health:detect', ['--sync' => true])
         ->expectsOutputToContain('command-detectable: Detection failed.')
         ->expectsOutputToContain('1 completed, 0 skipped, 1 failed')
         ->assertFailed();
@@ -355,12 +355,12 @@ final class CommandDetectableFinding extends Finding implements CanDetect
     }
 }
 
-#[Async(queue: 'health', connection: 'redis')]
 #[Scheduled('0 0 1 1 *')]
 final class CommandScheduledFinding extends Finding implements CanDetect
 {
     public static int $runs = 0;
 
+    #[Async(queue: 'health', connection: 'redis')]
     public static function detect(): callable
     {
         return function (Filesystem $filesystem): int {

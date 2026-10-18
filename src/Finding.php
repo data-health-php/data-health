@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DataHealth;
 
+use DataHealth\Attributes\Async;
 use DataHealth\Attributes\AutoResolve;
 use DataHealth\Attributes\AutoVerify;
 use DataHealth\Attributes\Description;
@@ -13,6 +14,7 @@ use DataHealth\Attributes\Worklist;
 use DataHealth\Enums\FindingUrgency;
 use DataHealth\Models\FindingRecord;
 use Illuminate\Database\Eloquent\Model;
+use LogicException;
 use ReflectionClass;
 
 abstract class Finding
@@ -54,6 +56,23 @@ abstract class Finding
     public static function getMethodDescription(string $method): ?string
     {
         return self::methodAttribute($method, Description::class)?->description;
+    }
+
+    public static function getAsync(): ?Async
+    {
+        $reflection = new ReflectionClass(static::class);
+
+        if ($reflection->getAttributes(Async::class) !== []) {
+            throw new LogicException('Async may only be applied to detect(): '.static::class);
+        }
+
+        foreach ($reflection->getMethods() as $method) {
+            if ($method->getName() !== 'detect' && $method->getAttributes(Async::class) !== []) {
+                throw new LogicException('Async may only be applied to detect(): '.static::class.'::'.$method->getName());
+            }
+        }
+
+        return self::methodAttribute('detect', Async::class);
     }
 
     public function isAutomaticallyResolved(): bool

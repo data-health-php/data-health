@@ -41,21 +41,21 @@ the created path and refuses to overwrite an existing file unless `--force` is s
 - configure `data-health.make_finding.interfaces` with a list of `DataHealth\Contracts\CanDetect::class`, `CanVerify::class`, and/or `CanResolve::class` to choose default contracts and method placeholders; the default is `[CanDetect::class]`
 - set the list to `[]` for a plain finding; command options and automatic action attributes add their required capabilities to the configured defaults
 - use `--key=`, `--description=`, `--worklist=`, and `--urgency=immediate|soon|normal|deferred` for class metadata
-- use `--schedule="*/5 * * * *"` to add scheduled detection, then `--async` and optional `--queue=` / `--connection=` for queue routing
+- use `--schedule="*/5 * * * *"` to add scheduled detection; `--async` adds `Async` to `detect()` and adds detection capability if needed, without requiring a schedule; optional `--queue=` / `--connection=` set routing
 - use `--auto-resolve` to add automatic resolution and its contract, or `--auto-verify=0` to add automatic verification with a non-negative delay in minutes and its contract
 - implement the generated method placeholders: detection returns `null`, and verification and resolution return `false`
 - inspect all options with `php artisan help health:make:finding`
 
 Run detection manually with `php artisan health:detect`:
 
-- runs all discovered `CanDetect` findings synchronously, regardless of their `Scheduled` or `Async` attributes, cron timing, or `data-health.scheduler.enabled`
+- runs all discovered `CanDetect` findings, honoring `Async` on `detect()`; ignores cron timing and `data-health.scheduler.enabled`; unannotated detection is synchronous
 - pass optional finding keys or fully qualified class names to select findings; repeat `--except=key-or-class` to exclude findings
 - selectors and exclusions must identify registered detectable findings; all are validated before execution, duplicate selections run once, and exclusions take precedence
 - detection defaults to finding selection when standard input and output are terminals; `-n` / `--no-interaction` runs candidates without prompting, and piped or redirected runs are non-interactive automatically
 - `--interactive` explicitly requests selection after exclusions; an empty selection runs nothing, and combining this flag with `--no-interaction` is rejected
 - the progress bar tracks finding classes, including failures and skips, and shows the current finding; use `--no-progress` to hide it
-- use `--async` to dispatch one unique `DetectFinding` job per selected finding; pending or running detections are skipped
-- async routing uses each finding's `Async` attribute or application defaults; `--queue=` and `--connection=` independently override routing and require `--async` and non-empty values
+- use `--sync` to force synchronous detection or `--async` to force queuing; these flags cannot be combined; queued detection dispatches one unique `DetectFinding` job per selected finding; pending or running detections are skipped
+- async routing uses `Async` on `detect()` or application defaults; `--queue=` and `--connection=` independently override routing and require `--async` and non-empty values
 - detection and dispatch failures are reported while remaining findings continue; the summary reports completed or queued, skipped, and failed detections, and any failure returns a nonzero exit code
 - async success confirms dispatch; workers handle detection results, and a non-`sync` connection is required for background execution
 - detection may return an integer, `null`, a callable, or a class string implementing `DataHealth\Contracts\Detector`
@@ -71,13 +71,15 @@ Run detection manually with `php artisan health:detect`:
 - scheduled detections do not overlap and run on one scheduler server per cron occurrence
 - use a shared `database`, `memcached`, `dynamodb`, or `redis` cache store when the scheduler runs on multiple servers
 
-### 4. Configure asynchronous detections
+### 4. Configure asynchronous detection
 
-- add `#[DataHealth\Attributes\Async]` alongside `#[DataHealth\Attributes\Scheduled(...)]` to dispatch a scheduled detection to Laravel's queue
-- optionally pass `queue` and `connection` to the `Async` attribute; omit them to use the application's queue defaults
-- configure a non-`sync` queue connection for actual asynchronous execution
-- ensure a queue worker is running before enabling asynchronous detections
+- add `#[DataHealth\Attributes\Async]` only to the finding's `detect()` method to queue manual and scheduled detection
+- class-level usage and attributes on other methods are rejected during finding discovery; move existing class attributes onto `detect()`
+- optionally pass `queue` and `connection`; omitted values use application defaults
+- direct PHP calls to `detect()` remain synchronous; use package detection entry points to honor attributes
+- configure a non-`sync` connection and operate its queue worker for background execution
 - keep a lock-capable shared cache configured so only one queued or running detection exists per finding class
+- verification and resolution always return their actual boolean results synchronously; `Async` does not configure automatic verification
 
 ### 5. Define stable finding keys
 
@@ -123,6 +125,8 @@ Run detection manually with `php artisan health:detect`:
 - `health:verify` and `health:resolve` are equivalent namespaced aliases
 - implement `CanVerify` or `CanResolve` on the finding for the requested action
 - actions run synchronously through the manager, which evaluates booleans, container-invoked callables, and container-resolved `Verifier` / `Resolver` handler classes
+- manager/facade `verify($record): bool` and `resolve($record): bool` return immediate results; these commands have no `--async` / `--sync` flags
+- automatic resolution is immediate; `AutoVerify` independently queues verification after commit with its configured delay, active-record guard, and application queue defaults
 - a `true` result marks the record resolved and exits with code `0`; `false` leaves its status unchanged and exits with code `1`
 - missing records, unsupported actions, and exceptions report an error and exit with code `1`
 
@@ -159,10 +163,10 @@ use DataHealth\Attributes\Scheduled;
 use DataHealth\Contracts\CanDetect;
 use DataHealth\Finding;
 
-#[Async(queue: 'data-health', connection: 'redis')]
 #[Scheduled('*/5 * * * *')]
 class DuplicateCustomerFinding extends Finding implements CanDetect
 {
+    #[Async(queue: 'data-health', connection: 'redis')]
     public static function detect(): int|callable|string|null
     {
         return null;
