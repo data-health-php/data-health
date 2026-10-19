@@ -13,13 +13,13 @@ Use this skill when a Laravel application needs to integrate the Data Health pac
 
 ## Primary Goal
 
-- apply the `23m/data-health` package's public API in the smallest correct way
+- apply the `data-health/data-health` package's public API in the smallest correct way
 
 ## Workflow
 
 ### 1. Install and publish the package
 
-- install `23m/data-health` with Composer
+- install `data-health/data-health` with Composer
 - publish migrations with `php artisan vendor:publish --tag="data-health-migrations"`
 - run `php artisan migrate`
 - publish configuration with `php artisan vendor:publish --tag="data-health-config"` when application-level overrides are needed
@@ -85,6 +85,7 @@ Run detection manually with `php artisan health:detect`:
 
 - add `#[DataHealth\Attributes\Key('stable-key')]` to a finding class when its persisted database key should not depend on the class basename
 - omit the attribute to keep using the finding class basename as the database key
+- keep keys unique across all configured directories; discovery throws an exception naming both classes before detection runs when two classes share a default or explicit key
 
 ### 6. Assign findings to worklists
 
@@ -145,6 +146,9 @@ Read before executing:
 
 - `config/data-health.php`
 - package `README.md`
+- [Full documentation](https://data-health-php.github.io/data-health-docs/) for detailed adoption guidance
+- [Quick start](https://data-health-php.github.io/data-health-docs/start-here/quick-start/) for a complete detection, verification, and resolution example
+- [CLI reference](https://data-health-php.github.io/data-health-docs/cli/overview/) for commands and record workflows
 
 ## Example
 

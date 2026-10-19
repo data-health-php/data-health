@@ -45,7 +45,7 @@ class ResolveCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info("Finding record {$id} resolved.");
+        $this->line("<fg=white;bg=green>Finding record {$id} resolved.</>");
 
         return self::SUCCESS;
     }

@@ -71,3 +71,34 @@ it('rejects unknown finding keys and classes', function () {
     expect(fn () => (new FindingRegistry)->getClass('MissingFinding'))
         ->toThrow(RuntimeException::class, 'Finding with key or class MissingFinding not found');
 });
+
+it('rejects duplicate finding keys without caching an incomplete registry', function (string $type, string $key, string $first, string $second, bool $separateDirectories) {
+    $directory = '../../../../tests/Fixtures/CollidingFindings/'.$type;
+    $namespace = 'DataHealth\\Tests\\Fixtures\\CollidingFindings\\'.$type;
+
+    config()->set('data-health.directories', $separateDirectories ? [
+        $directory.'/First' => $namespace.'\\First',
+        $directory.'/Second' => $namespace.'\\Second',
+    ] : [$directory => $namespace]);
+
+    $registry = new FindingRegistry;
+
+    foreach (range(1, 2) as $attempt) {
+        expect(fn () => $registry->detectable())->toThrow(
+            RuntimeException::class,
+            "Duplicate finding key [{$key}] used by [{$namespace}\\First\\{$first}] and [{$namespace}\\Second\\{$second}].",
+        );
+    }
+})->with([
+    'default keys' => ['Default', 'DuplicateFinding', 'DuplicateFinding', 'DuplicateFinding'],
+    'explicit keys' => ['Explicit', 'shared-key', 'FirstFinding', 'SecondFinding'],
+])->with([false, true]);
+
+it('allows the same finding class in overlapping configured directories', function () {
+    config()->set('data-health.directories', [
+        '../../../../tests/Fixtures/DataHealth' => 'DataHealth\\Tests\\Fixtures\\DataHealth',
+        '../../../../tests/Fixtures/DataHealth/Customers' => 'DataHealth\\Tests\\Fixtures\\DataHealth\\Customers',
+    ]);
+
+    expect((new FindingRegistry)->all()->all())->toHaveCount(10);
+});

@@ -1,8 +1,5 @@
-# Release Notes
+# Changelog
 
-## [Unreleased](https://github.com/data-health-php/data-health/compare/v0.1.0...1.x)
+## Unreleased
 
-
-## [v0.1.0](https://github.com/data-health-php/data-health/compare/...v0.1.0) - 202x-xx-xx
-
-Initial pre-release.
+Initial release in development.

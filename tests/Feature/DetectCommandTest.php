@@ -54,6 +54,19 @@ it('can force every detectable finding to run synchronously', function () {
     Queue::assertNothingPushed();
 });
 
+it('rejects duplicate keys before running or queueing any detection', function (bool $async) {
+    Queue::fake();
+    file_put_contents($this->detectionDirectory.'/CommandDuplicateFinding.php', '<?php');
+
+    $this->artisan('health:detect', ['--no-interaction' => true, '--async' => $async])
+        ->expectsOutput('Duplicate finding key [command-detectable] used by ['.CommandDetectableFinding::class.'] and ['.CommandDuplicateFinding::class.'].')
+        ->assertFailed();
+
+    expect(CommandDetectableFinding::$runs)->toBe(0)
+        ->and(CommandScheduledFinding::$runs)->toBe(0);
+    Queue::assertNothingPushed();
+})->with([false, true]);
+
 it('selects findings by key or class and runs each once', function () {
     $this->artisan('health:detect', ['findings' => ['command-detectable', CommandDetectableFinding::class]])
         ->expectsOutputToContain('1 completed, 0 skipped, 0 failed')
@@ -373,6 +386,9 @@ final class CommandScheduledFinding extends Finding implements CanDetect
 }
 
 final class CommandPlainFinding extends Finding {}
+
+#[Key('command-detectable')]
+final class CommandDuplicateFinding extends Finding {}
 
 final class CommandDetectorFinding extends Finding implements CanDetect
 {

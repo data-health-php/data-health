@@ -95,20 +95,32 @@ class FindingRegistry
 
     private function boot(): void
     {
-        $this->findings = collect();
+        /** @var Collection<string, class-string<Finding>> $findings */
+        $findings = collect();
 
         foreach (config('data-health.directories') as $dir => $namespace) {
-            $this->findings = $this->findings->merge($this->discover($dir, $namespace));
+            foreach ($this->discover($dir, $namespace) as $class) {
+                $key = $class::key();
+                $existing = $findings->get($key);
+
+                if ($existing !== null && $existing !== $class) {
+                    throw new RuntimeException("Duplicate finding key [{$key}] used by [{$existing}] and [{$class}].");
+                }
+
+                $findings->put($key, $class);
+            }
         }
+
+        $this->findings = $findings;
     }
 
-    /** @return Collection<string, class-string<Finding>> */
+    /** @return Collection<int, class-string<Finding>> */
     private function discover(string $configuredDirectory, string $namespace): Collection
     {
         $directory = realpath(base_path($configuredDirectory));
 
         if ($directory === false || ! is_dir($directory)) {
-            /** @var Collection<string, class-string<Finding>> $findings */
+            /** @var Collection<int, class-string<Finding>> $findings */
             $findings = collect();
 
             return $findings;
@@ -125,7 +137,7 @@ class FindingRegistry
         /** @var Collection<int, SplFileInfo> $files */
         $files = collect(iterator_to_array($iterator, false));
 
-        /** @var Collection<string, class-string<Finding>> $findings */
+        /** @var Collection<int, class-string<Finding>> $findings */
         $findings = $files
             ->filter(fn (SplFileInfo $file) => $file->isFile() && $file->getExtension() === 'php')
             ->sortBy(fn (SplFileInfo $file) => $file->getPathname(), SORT_STRING)
@@ -148,7 +160,7 @@ class FindingRegistry
 
                 return true;
             })
-            ->mapWithKeys(fn (string $class) => [$class::key() => $class]);
+            ->values();
 
         return $findings;
     }

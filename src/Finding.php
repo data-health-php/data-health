@@ -93,9 +93,7 @@ abstract class Finding
      */
     private static function classAttribute(string $attribute): ?object
     {
-        $reflectionAttribute = array_first(
-            (new ReflectionClass(static::class))->getAttributes($attribute),
-        );
+        $reflectionAttribute = (new ReflectionClass(static::class))->getAttributes($attribute)[0] ?? null;
 
         return $reflectionAttribute?->newInstance();
     }
@@ -114,9 +112,7 @@ abstract class Finding
             return null;
         }
 
-        $reflectionAttribute = array_first(
-            $reflection->getMethod($method)->getAttributes($attribute),
-        );
+        $reflectionAttribute = $reflection->getMethod($method)->getAttributes($attribute)[0] ?? null;
 
         return $reflectionAttribute?->newInstance();
     }
