@@ -165,7 +165,7 @@ class RecordsCommand extends Command
 
         $finding = $this->option('finding');
 
-        if ($finding !== null) {
+        if (is_string($finding)) {
             if (trim($finding) === '') {
                 throw new InvalidArgumentException('--finding requires a finding key or class name.');
             }
