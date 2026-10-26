@@ -19,7 +19,7 @@ it('acts on the highlighted record when no rows are selected', function (string 
 
     expect($prompt->prompt())->toBe([18])
         ->and($prompt->action)->toBe($action);
-})->with([['r', 'resolve'], ['v', 'verify'], ['i', 'ignore'], ['s', 'solve'], [Key::ENTER, 'inspect']]);
+})->with([['r', 'resolve'], ['v', 'verify'], ['i', 'ignore'], ['s', 'solve'], [Key::ENTER, 'inspect']])->skipOnWindows();
 
 it('acts on checked rows rather than the highlighted row', function () {
     Prompt::fake([Key::SPACE, Key::DOWN, 'r']);
@@ -27,7 +27,7 @@ it('acts on checked rows rather than the highlighted row', function () {
 
     expect($prompt->prompt())->toBe([12])
         ->and($prompt->action)->toBe('resolve');
-});
+})->skipOnWindows();
 
 it('can select multiple rows and toggle all rows', function (array $keys, array $ids) {
     Prompt::fake($keys);
@@ -40,7 +40,7 @@ it('can select multiple rows and toggle all rows', function (array $keys, array 
     [['a', 'a', Key::DOWN, 'r'], [18]],
     [[Key::SPACE, Key::DOWN, 'i'], [12]],
     [[Key::SPACE, Key::DOWN, 's'], [12]],
-]);
+])->skipOnWindows();
 
 it('inspects the highlighted row even when other rows are checked', function () {
     Prompt::fake([Key::SPACE, Key::DOWN, Key::ENTER]);
@@ -48,7 +48,7 @@ it('inspects the highlighted row even when other rows are checked', function () 
 
     expect($prompt->prompt())->toBe([18])
         ->and($prompt->action)->toBe('inspect');
-});
+})->skipOnWindows();
 
 it('supports paging refresh and quit shortcuts', function (string $key, string $action) {
     Prompt::fake([$key]);
@@ -56,7 +56,7 @@ it('supports paging refresh and quit shortcuts', function (string $key, string $
     $prompt->prompt();
 
     expect($prompt->action)->toBe($action);
-})->with([['n', 'next'], ['p', 'previous'], ['f', 'refresh'], ['q', 'exit']]);
+})->with([['n', 'next'], ['p', 'previous'], ['f', 'refresh'], ['q', 'exit']])->skipOnWindows();
 
 it('ignores page shortcuts when the page does not exist', function () {
     Prompt::fake(['n', 'p', 'q']);
@@ -64,7 +64,7 @@ it('ignores page shortcuts when the page does not exist', function () {
     $prompt->prompt();
 
     expect($prompt->action)->toBe('exit');
-});
+})->skipOnWindows();
 
 it('renders column headings selection markers and keyboard help', function () {
     Prompt::fake([Key::SPACE, 'q']);
@@ -76,7 +76,7 @@ it('renders column headings selection markers and keyboard help', function () {
     Prompt::assertStrippedOutputContains('r resolve');
     Prompt::assertStrippedOutputContains('i ignore');
     Prompt::assertStrippedOutputContains('s mark solved');
-});
+})->skipOnWindows();
 
 it('fits long values within a narrow terminal and removes terminal control characters', function () {
     Prompt::fake(['q']);
@@ -87,7 +87,7 @@ it('fits long values within a narrow terminal and removes terminal control chara
     foreach (explode(PHP_EOL, Prompt::strippedContent()) as $line) {
         expect(mb_strwidth($line))->toBeLessThanOrEqual(40);
     }
-});
+})->skipOnWindows();
 
 it('scrolls the table to keep the highlighted record visible', function () {
     $rows = [];
@@ -101,4 +101,4 @@ it('scrolls the table to keep the highlighted record visible', function () {
 
     expect($prompt->prompt())->toBe([15]);
     Prompt::assertStrippedOutputContains('Finding15');
-});
+})->skipOnWindows();

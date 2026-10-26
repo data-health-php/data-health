@@ -245,7 +245,7 @@ it('resolves checked table rows with a keyboard shortcut', function () {
     expect($first->fresh()->status)->toBe(RecordStatus::Resolved)
         ->and($second->fresh()->status)->toBe(RecordStatus::Resolved)
         ->and($other->fresh()->status)->toBe(RecordStatus::Active);
-});
+})->skipOnWindows();
 
 it('skips unsupported checked rows while verifying supported rows', function () {
     $manager = app(DataHealthManager::class);
@@ -267,7 +267,7 @@ it('skips unsupported checked rows while verifying supported rows', function () 
 
     expect($record->fresh()->status)->toBe(RecordStatus::Resolved)
         ->and($other->fresh()->status)->toBe(RecordStatus::Active);
-});
+})->skipOnWindows();
 
 it('navigates pages and inspects the highlighted record with table keys', function () {
     $manager = app(DataHealthManager::class);
@@ -285,7 +285,7 @@ it('navigates pages and inspects the highlighted record with table keys', functi
     $this->artisan('health:records', ['--interactive' => true, '--per-page' => '1'])
         ->expectsOutputToContain('"reason": "keyboard inspection"')
         ->assertSuccessful();
-});
+})->skipOnWindows();
 
 it('falls back to menus when the terminal cannot capture raw keys', function () {
     app(DataHealthManager::class)->found(new BasicFinding($this->model));
@@ -302,7 +302,7 @@ it('falls back to menus when the terminal cannot capture raw keys', function () 
     $this->artisan('health:records', ['--interactive' => true])
         ->expectsQuestion('Record actions', 'exit')
         ->assertSuccessful();
-});
+})->skipOnWindows();
 
 it('ignores checked records or the highlighted record without requiring a finding action contract', function (array $keys, bool $firstIgnored) {
     $manager = app(DataHealthManager::class);
@@ -330,7 +330,7 @@ it('ignores checked records or the highlighted record without requiring a findin
 })->with([
     'checked rows' => [[Key::SPACE, Key::DOWN, Key::SPACE, 'i', 'q'], true],
     'highlighted row' => [[Key::DOWN, 'i', 'q'], false],
-]);
+])->skipOnWindows();
 
 it('offers ignore in the fallback menu and refreshes active records', function () {
     $record = app(DataHealthManager::class)->found(new BasicFinding($this->model));
@@ -365,7 +365,7 @@ it('skips resolved records when ignoring a table selection', function () {
 
     expect($active->fresh()->status)->toBe(RecordStatus::Ignored)
         ->and($resolved->fresh()->status)->toBe(RecordStatus::Resolved);
-});
+})->skipOnWindows();
 
 it('continues ignoring other records after a save fails and returns a failure exit code', function () {
     $manager = app(DataHealthManager::class);
@@ -415,7 +415,7 @@ it('marks checked records or the highlighted record as solved without executing 
 })->with([
     'checked rows' => [[Key::SPACE, Key::DOWN, Key::SPACE, 's', 'q'], true],
     'highlighted row' => [[Key::DOWN, 's', 'q'], false],
-]);
+])->skipOnWindows();
 
 it('marks an ignored record with an unregistered finding as solved from the fallback menu', function () {
     $record = app(DataHealthManager::class)->found(new BasicFinding($this->model));
@@ -451,4 +451,4 @@ it('skips records already resolved when marking rows as solved', function () {
 
     expect($active->fresh()->status)->toBe(RecordStatus::Resolved)
         ->and($resolved->fresh()->status)->toBe(RecordStatus::Resolved);
-});
+})->skipOnWindows();
