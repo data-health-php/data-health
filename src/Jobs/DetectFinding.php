@@ -26,13 +26,21 @@ class DetectFinding implements ShouldBeUnique, ShouldQueue
         match (true) {
             is_int($response), $response === null => null,
             is_callable($response) => app()->call($response),
-            is_a($response, Detector::class, true) => app()->make($response)->detect(),
-            default => throw new RuntimeException($this->finding.' does not implement Detector'),
+            default => $this->detectUsingHandler($response),
         };
     }
 
     public function uniqueId(): string
     {
         return $this->finding;
+    }
+
+    private function detectUsingHandler(string $handler): void
+    {
+        if (! is_a($handler, Detector::class, true)) {
+            throw new RuntimeException($this->finding.' does not implement Detector');
+        }
+
+        app()->make($handler)->detect();
     }
 }

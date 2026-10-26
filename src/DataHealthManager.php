@@ -94,8 +94,7 @@ class DataHealthManager
         $result = match (true) {
             is_bool($response) => $response,
             is_callable($response) => app()->call($response),
-            is_a($response, Resolver::class, true) => app()->make($response)->resolve($record),
-            default => throw new RuntimeException($finding::class.' does not implement Resolver'),
+            default => $this->resolveUsingHandler($response, $finding, $record),
         };
 
         if ($result === true) {
@@ -118,8 +117,7 @@ class DataHealthManager
         $result = match (true) {
             is_bool($response) => $response,
             is_callable($response) => app()->call($response),
-            is_a($response, Verifier::class, true) => app()->make($response)->verify($record),
-            default => throw new RuntimeException($finding::class.' does not implement Verifier'),
+            default => $this->verifyUsingHandler($response, $finding, $record),
         };
 
         if ($result === true) {
@@ -127,5 +125,23 @@ class DataHealthManager
         }
 
         return $result;
+    }
+
+    private function resolveUsingHandler(string $handler, Finding $finding, FindingRecord $record): bool
+    {
+        if (! is_a($handler, Resolver::class, true)) {
+            throw new RuntimeException($finding::class.' does not implement Resolver');
+        }
+
+        return app()->make($handler)->resolve($record);
+    }
+
+    private function verifyUsingHandler(string $handler, Finding $finding, FindingRecord $record): bool
+    {
+        if (! is_a($handler, Verifier::class, true)) {
+            throw new RuntimeException($finding::class.' does not implement Verifier');
+        }
+
+        return app()->make($handler)->verify($record);
     }
 }
