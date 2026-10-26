@@ -4,8 +4,7 @@ Consult this after designing a finding with the main skill.
 
 ### 1. Install and publish the package
 
-- the initial release is in development; until a tagged release is available,
-  install with `composer require data-health/data-health:dev-main`
+- install with `composer require data-health/data-health:^0.1`
 - publish migrations with `php artisan vendor:publish --tag="data-health-migrations"`
 - run `php artisan migrate`
 - publish configuration with `php artisan vendor:publish --tag="data-health-config"` when application-level overrides are needed

@@ -42,11 +42,8 @@ Start with one inconsistency you already know how to recognize.
 
 Requires **PHP 8.3+** and **Laravel 12 or 13**. Filament is optional.
 
-**Release status:** The initial release is in development. Until a tagged release
-is available, install the development branch explicitly:
-
 ```bash
-composer require data-health/data-health:dev-main
+composer require data-health/data-health:^0.1
 php artisan vendor:publish --tag="data-health"
 php artisan migrate
 ```
@@ -137,7 +134,7 @@ package adds a Filament 5 interface for searching and filtering findings, inspec
 affected records, assigning work, running bulk actions, and viewing statistics.
 You can also embed its tables in Blade or Livewire views.
 
-It uses the same findings and records as the core package. It is also currently
+It uses the same findings and records as the core package. It is currently
 available on the development branch:
 
 ```bash
