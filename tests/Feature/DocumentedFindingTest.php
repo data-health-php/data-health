@@ -19,29 +19,64 @@ beforeEach(function () {
         $table->string('status')->default('pending');
     });
 
-    // Execute the published example with a test model rather than duplicating its logic.
-    preg_match('/```php\n(.*?)\n```/s', file_get_contents(__DIR__.'/../../README.md'), $matches);
+    $this->documentationDirectory = sys_get_temp_dir().'/data-health-documentation-'.bin2hex(random_bytes(8));
+    (new Filesystem)->ensureDirectoryExists($this->documentationDirectory.'/findings');
 
-    $this->readmeDirectory = sys_get_temp_dir().'/data-health-readme-'.bin2hex(random_bytes(8));
-    $name = 'ReadmeFinding'.bin2hex(random_bytes(8));
-    $source = str_replace(
-        ['namespace App\\DataHealth;', 'use App\\Models\\Order;', 'PaidOrderMarkedPending'],
-        ['namespace DataHealth\\Tests\\ReadmeFindings;', 'use '.TestModel::class.' as Order;', $name],
-        $matches[1],
-    );
+    // Execute the published examples with a test model rather than duplicating their logic.
+    foreach ([
+        'readmeFinding' => 'README.md',
+        'completeFinding' => 'resources/boost/skills/data-health-development/SKILL.md',
+    ] as $property => $document) {
+        preg_match('/```php\n(.*?)\n```/s', file_get_contents(__DIR__.'/../../'.$document), $matches);
 
-    (new Filesystem)->ensureDirectoryExists($this->readmeDirectory.'/findings');
-    $path = $this->readmeDirectory.'/findings/'.$name.'.php';
-    file_put_contents($path, $source);
-    require $path;
+        $name = 'DocumentedFinding'.bin2hex(random_bytes(8));
+        $source = str_replace(
+            ['namespace App\\DataHealth;', 'use App\\Models\\Order;', 'PaidOrderMarkedPending'],
+            ['namespace DataHealth\\Tests\\DocumentedFindings;', 'use '.TestModel::class.' as Order;', $name],
+            $matches[1],
+        );
 
-    app()->setBasePath($this->readmeDirectory);
-    config()->set('data-health.directories', ['findings' => 'DataHealth\\Tests\\ReadmeFindings\\']);
-    $this->readmeFinding = 'DataHealth\\Tests\\ReadmeFindings\\'.$name;
+        $path = $this->documentationDirectory.'/findings/'.$name.'.php';
+        file_put_contents($path, $source);
+        require $path;
+
+        $this->$property = 'DataHealth\\Tests\\DocumentedFindings\\'.$name;
+    }
+
+    app()->setBasePath($this->documentationDirectory);
+    config()->set('data-health.directories', ['findings' => 'DataHealth\\Tests\\DocumentedFindings\\']);
 });
 
 afterEach(function () {
-    (new Filesystem)->deleteDirectory($this->readmeDirectory);
+    (new Filesystem)->deleteDirectory($this->documentationDirectory);
+});
+
+it('runs the readme detector without changing orders and reopens recurring findings', function () {
+    $order = TestModel::create(['name' => 'Paid pending', 'paid_at' => now()]);
+    TestModel::create(['name' => 'Unpaid']);
+    TestModel::create(['name' => 'Already paid', 'paid_at' => now(), 'status' => 'paid']);
+
+    $finding = $this->readmeFinding;
+    $finding::detect();
+    $finding::detect();
+
+    $record = FindingRecord::query()->sole();
+
+    expect($record->status)->toBe(RecordStatus::Active)
+        ->and($record->model->is($order))->toBeTrue()
+        ->and($order->fresh()->status)->toBe('pending');
+
+    $record->update(['status' => RecordStatus::Resolved]);
+    $finding::detect();
+
+    expect(FindingRecord::query()->sole()->id)->toBe($record->id)
+        ->and($record->refresh()->status)->toBe(RecordStatus::Active);
+
+    $record->update(['status' => RecordStatus::Ignored]);
+    $finding::detect();
+
+    expect(FindingRecord::query()->sole()->id)->toBe($record->id)
+        ->and($record->refresh()->status)->toBe(RecordStatus::Ignored);
 });
 
 it('detects repeatable occurrences and verifies only the corrected record', function () {
@@ -50,7 +85,7 @@ it('detects repeatable occurrences and verifies only the corrected record', func
     TestModel::create(['name' => 'Unpaid']);
     TestModel::create(['name' => 'Already paid', 'paid_at' => now(), 'status' => 'paid']);
 
-    $finding = $this->readmeFinding;
+    $finding = $this->completeFinding;
     $finding::detect();
     $finding::detect();
 
@@ -71,7 +106,7 @@ it('detects repeatable occurrences and verifies only the corrected record', func
 
 it('corrects the documented inconsistency and safely repeats resolution', function () {
     $order = TestModel::create(['name' => 'Paid pending', 'paid_at' => now()]);
-    $record = $this->readmeFinding::found($order);
+    $record = $this->completeFinding::found($order);
 
     expect(DataHealth::resolve($record))->toBeTrue()
         ->and($order->refresh()->status)->toBe('paid')
@@ -82,7 +117,7 @@ it('corrects the documented inconsistency and safely repeats resolution', functi
 
 it('preserves valid changes made after detection', function (array $changes) {
     $order = TestModel::create(['name' => 'Changed later', 'paid_at' => now()]);
-    $record = $this->readmeFinding::found($order);
+    $record = $this->completeFinding::found($order);
     $order->update($changes);
 
     expect(DataHealth::resolve($record))->toBeTrue()
@@ -96,7 +131,7 @@ it('preserves valid changes made after detection', function (array $changes) {
 
 it('rejects unexpected models without resolving the record', function (string $operation) {
     $model = PlainTestModel::create(['name' => 'Unexpected model', 'paid_at' => now()]);
-    $record = $this->readmeFinding::found($model);
+    $record = $this->completeFinding::found($model);
 
     expect(fn () => DataHealth::$operation($record))
         ->toThrow(LogicException::class, 'Expected an Order model.');

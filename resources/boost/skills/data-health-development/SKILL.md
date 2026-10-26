@@ -159,7 +159,8 @@ class PaidOrderMarkedPending extends Finding implements CanDetect, CanVerify, Ca
 Read the consuming application's conventions and `config/data-health.php` before
 execution, then consult only the relevant references:
 
-- Package `README.md` for the lifecycle and installation.
+- Package `README.md` for installation and a minimal detection example; use this
+  skill's complete example or the quick start below when adding verification and resolution.
 - [Design a finding from application evidence](https://data-health-php.github.io/data-health-docs/guides/detecting-problems/#establish-the-application-rule).
 - [Quick start](https://data-health-php.github.io/data-health-docs/start-here/quick-start/).
 - [Context](https://data-health-php.github.io/data-health-docs/guides/context/) for identity and validation.
