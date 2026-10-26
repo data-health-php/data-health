@@ -47,6 +47,15 @@ class RecordTablePrompt extends MultiSelectPrompt
         });
     }
 
+    public function highlightedValue(): int|string|null
+    {
+        if ($this->highlighted === null) {
+            return null;
+        }
+
+        return array_keys($this->options)[$this->highlighted] ?? null;
+    }
+
     /** @return list<int|string> */
     public function fallback(): array
     {

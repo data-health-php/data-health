@@ -68,7 +68,7 @@ class MakeFindingCommand extends GeneratorCommand
     }
 
     /** @param string $name */
-    protected function qualifyClass($name): string
+    protected function qualifyClass(mixed $name): string
     {
         $name = str_replace('/', '\\', ltrim($name, '\\/'));
 
@@ -83,7 +83,7 @@ class MakeFindingCommand extends GeneratorCommand
     }
 
     /** @param string $name */
-    protected function getPath($name): string
+    protected function getPath(mixed $name): string
     {
         $relativeClass = substr($name, strlen($this->namespace) + 1);
 
@@ -91,7 +91,7 @@ class MakeFindingCommand extends GeneratorCommand
     }
 
     /** @param string $name */
-    protected function buildClass($name): string
+    protected function buildClass(mixed $name): string
     {
         $imports = [];
         $attributes = [];
