@@ -6,8 +6,9 @@
 </div>
 
 <p align="center">
-    <a href="https://packagist.org/packages/data-health/data-health"><img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?style=flat-square" alt="PHP 8.3 or newer"></a>
-    <a href="https://packagist.org/packages/data-health/data-health"><img src="https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20?style=flat-square" alt="Laravel 12 and 13"></a>
+    <a href="https://packagist.org/packages/data-health/data-health"><img src="https://img.shields.io/packagist/v/data-health/data-health.svg?style=flat-square" alt="Packagist"></a>
+    <a href="https://packagist.org/packages/data-health/data-health"><img src="https://img.shields.io/packagist/php-v/data-health/data-health.svg?style=flat-square" alt="PHP from Packagist"></a>
+    <a href="https://packagist.org/packages/data-health/data-health"><img src="https://badge.laravel.cloud/badge/data-health/data-health?style=flat" alt="Laravel versions"></a>
     <a href="https://github.com/data-health-php/data-health/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/data-health-php/data-health/tests.yml?branch=main&label=Tests&style=flat-square" alt="Test suite status"></a>
 </p>
 
