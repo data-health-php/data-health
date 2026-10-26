@@ -12,13 +12,10 @@ use Throwable;
 class VerifyCommand extends Command
 {
     /** @var string */
-    protected $signature = 'verify {id : The finding record ID}';
+    protected $signature = 'health:verify {id : The finding record ID}';
 
     /** @var string */
     protected $description = 'Verify a Data Health finding record';
-
-    /** @var list<string> */
-    protected $aliases = ['health:verify'];
 
     public function handle(DataHealthManager $manager): int
     {

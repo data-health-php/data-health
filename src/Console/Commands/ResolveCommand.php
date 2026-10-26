@@ -12,13 +12,10 @@ use Throwable;
 class ResolveCommand extends Command
 {
     /** @var string */
-    protected $signature = 'resolve {id : The finding record ID}';
+    protected $signature = 'health:resolve {id : The finding record ID}';
 
     /** @var string */
     protected $description = 'Resolve a Data Health finding record';
-
-    /** @var list<string> */
-    protected $aliases = ['health:resolve'];
 
     public function handle(DataHealthManager $manager): int
     {

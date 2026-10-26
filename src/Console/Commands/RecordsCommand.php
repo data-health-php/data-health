@@ -300,7 +300,7 @@ class RecordsCommand extends Command
             $result = match ($action) {
                 'ignore' => $this->updateRecordStatus((string) $id, RecordStatus::Ignored),
                 'solve' => $this->updateRecordStatus((string) $id, RecordStatus::Resolved),
-                default => $this->call($action, ['id' => (string) $id]),
+                default => $this->call('health:'.$action, ['id' => (string) $id]),
             };
 
             if ($result === self::SUCCESS) {
