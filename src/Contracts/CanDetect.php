@@ -7,9 +7,14 @@ namespace DataHealth\Contracts;
 interface CanDetect
 {
     /**
-     * Return a Detector class name to delegate detection to a dedicated class.
+     * Search candidate records and report each occurrence with self::found().
+     * Return null for inline detection; leave business-data corrections to resolution.
+     * Reporting a new occurrence may invoke resolution when AutoResolve is enabled.
      *
-     * @return int|(callable(mixed...): (int|null))|string|null
+     * Callables and Detector class names delegate detection through Laravel's container.
+     * Integer counts are optional and ignored by core detection execution.
+     *
+     * @return int|(callable(mixed...): (int|null))|class-string<Detector>|null
      */
     public static function detect(): int|callable|string|null;
 }

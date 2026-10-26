@@ -1,5 +1,6 @@
     public function verify(): bool
     {
-        // Return true only when the finding no longer applies.
-        return false;
+        // Recheck this model and context without changing business data or rerunning detection.
+        // Return true only when this occurrence no longer applies; throw for invalid input.
+        throw new \LogicException(static::class.'::verify() is not implemented. Replace the generated placeholder.');
     }

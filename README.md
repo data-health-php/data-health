@@ -29,6 +29,31 @@ discovery, persistence, deduplication, and the finding lifecycle.
 [Documentation](https://data-health-php.github.io/data-health-docs/) ·
 [Quick start](https://data-health-php.github.io/data-health-docs/start-here/quick-start/)
 
+## How findings work
+
+Each finding expresses an application rule. Implement only the capabilities it needs:
+
+| Operation | Scope | Responsibility | Inline result |
+| --- | --- | --- | --- |
+| `detect()` | Candidate records | Report each occurrence with `found()`. | `null` |
+| `verify()` | One occurrence's model and context, including relevant related data | Check whether the problem has disappeared without changing business data. | `bool` |
+| `resolve()` | One occurrence's model and context | Recheck applicability and apply a known correction using application logic. | `bool` |
+
+Assess resolution for every finding. Implement it when application rules establish a
+deterministic correction; explain when human judgment is required. **Implementing
+`resolve()` exposes an action. It does not execute it automatically.** `#[AutoResolve]`
+separately opts into resolution when a finding record is first created.
+
+A `true` verification or resolution result marks the record resolved; `false` leaves
+its status unchanged. Throw when invalid input or an operational failure prevents a
+reliable result. Detection does not resolve records merely because a scan stops reporting them.
+
+**For coding agents:** read the [Data Health development skill](resources/boost/skills/data-health-development/SKILL.md)
+before generating findings or scanning an application for inconsistencies. With Laravel
+Boost, run `php artisan boost:install` and select the package guidelines and skill;
+use `php artisan boost:update` to refresh installed guidance. Without Boost, read the
+bundled skill directly in `vendor/data-health/data-health/resources/boost/skills/data-health-development/SKILL.md`.
+
 ## Installation
 
 Requires **PHP 8.3+** and **Laravel 12 or 13**.
@@ -59,6 +84,8 @@ Replace the generated class in `app/DataHealth/PaidOrderMarkedPending.php`:
 ```php
 <?php
 
+declare(strict_types=1);
+
 namespace App\DataHealth;
 
 use App\Models\Order;
@@ -66,6 +93,7 @@ use DataHealth\Contracts\CanDetect;
 use DataHealth\Contracts\CanResolve;
 use DataHealth\Contracts\CanVerify;
 use DataHealth\Finding;
+use Illuminate\Support\Facades\DB;
 
 class PaidOrderMarkedPending extends Finding implements CanDetect, CanVerify, CanResolve
 {
@@ -83,12 +111,28 @@ class PaidOrderMarkedPending extends Finding implements CanDetect, CanVerify, Ca
     {
         $order = $this->model->refresh();
 
+        if (! $order instanceof Order) {
+            throw new \LogicException('Expected an Order model.');
+        }
+
         return $order->paid_at === null || $order->status !== 'pending';
     }
 
     public function resolve(): bool
     {
-        return $this->model->update(['status' => 'paid']);
+        if (! $this->model instanceof Order) {
+            throw new \LogicException('Expected an Order model.');
+        }
+
+        return DB::transaction(function (): bool {
+            $order = Order::query()->lockForUpdate()->findOrFail($this->model->getKey());
+
+            if ($order->paid_at === null || $order->status !== 'pending') {
+                return true;
+            }
+
+            return $order->update(['status' => 'paid']);
+        });
     }
 }
 ```
@@ -109,6 +153,12 @@ finding needs. The [quick start](https://data-health-php.github.io/data-health-d
 walks through the complete lifecycle, and the
 [CLI guide](https://data-health-php.github.io/data-health-docs/cli/overview/)
 covers browsing, filtering, and acting on findings.
+
+The resolver rechecks the current state while locking the order, so a later valid
+status is preserved and repeated resolution is safe. Reuse an existing domain action
+when the application owns this transition. The generator's unfinished methods throw
+explicit exceptions until you replace them. For supported delegation and optional
+detection counts, see the [contract reference](https://data-health-php.github.io/data-health-docs/reference/attributes-and-contracts/).
 
 ## A dashboard for your team
 

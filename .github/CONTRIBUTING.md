@@ -41,3 +41,7 @@ Run all tests:
 ```bash
 composer test
 ```
+
+When changing agent guidance or introductory finding patterns, also use the
+[consumer-agent evaluation scenarios](agent-evaluations.md). Record actual agent
+results separately from the deterministic package test suite.

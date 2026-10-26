@@ -1,5 +1,6 @@
-    public static function detect(): int|callable|string|null
+    public static function detect(): null
     {
-        // Report matching models with static::found($model, $context).
-        return null;
+        // Report each occurrence with static::found($model, $context), then return null.
+        // Leave corrections to resolve(); automatic resolution requires AutoResolve.
+        throw new \LogicException(static::class.'::detect() is not implemented. Replace the generated placeholder.');
     }

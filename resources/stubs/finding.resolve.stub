@@ -1,5 +1,6 @@
     public function resolve(): bool
     {
-        // Correct the issue and return true only when resolution succeeds.
-        return false;
+        // Recheck this occurrence and apply a known correction using application logic.
+        // Return true when the problem is gone; implementing this does not enable AutoResolve.
+        throw new \LogicException(static::class.'::resolve() is not implemented. Replace the generated placeholder.');
     }

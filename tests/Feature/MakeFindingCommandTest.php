@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\DataHealth\GeneratedBasicFinding;
-use App\DataHealth\GeneratedCompleteFinding;
 use DataHealth\Attributes\Async;
 use DataHealth\Attributes\AutoResolve;
 use DataHealth\Attributes\AutoVerify;
@@ -12,6 +10,7 @@ use DataHealth\Contracts\CanDetect;
 use DataHealth\Contracts\CanResolve;
 use DataHealth\Contracts\CanVerify;
 use DataHealth\Enums\FindingUrgency;
+use DataHealth\Enums\RecordStatus;
 use DataHealth\Finding;
 use DataHealth\FindingRegistry;
 use DataHealth\Tests\Fixtures\Models\TestModel;
@@ -33,11 +32,12 @@ it('generates a detectable finding in the default directory', function () {
 
     $path = base_path('app/DataHealth/GeneratedBasicFinding.php');
     require $path;
+    $class = 'App\\DataHealth\\GeneratedBasicFinding';
 
-    expect(is_subclass_of(GeneratedBasicFinding::class, Finding::class))->toBeTrue()
-        ->and(array_values(class_implements(GeneratedBasicFinding::class)))->toBe([CanDetect::class])
-        ->and(GeneratedBasicFinding::detect())->toBeNull()
-        ->and((new FindingRegistry)->getClass('GeneratedBasicFinding'))->toBe(GeneratedBasicFinding::class)
+    expect(is_subclass_of($class, Finding::class))->toBeTrue()
+        ->and(array_values(class_implements($class)))->toBe([CanDetect::class])
+        ->and((new ReflectionMethod($class, 'detect'))->getReturnType()->getName())->toBe('null')
+        ->and((new FindingRegistry)->getClass('GeneratedBasicFinding'))->toBe($class)
         ->and(file_get_contents($path))->toContain('declare(strict_types=1);');
 });
 
@@ -77,7 +77,7 @@ it('adds explicit capabilities to the configured defaults without duplicates', f
         ->toEqualCanonicalizing([CanDetect::class, CanVerify::class, CanResolve::class]);
 });
 
-it('generates nested findings with optional capabilities', function (string $option, string $contract, string $method, mixed $result) {
+it('generates nested findings whose unfinished capabilities throw', function (string $option, string $contract, string $method) {
     config()->set('data-health.make_finding.interfaces', []);
 
     $name = 'Generated'.ucfirst($method).'Finding';
@@ -90,12 +90,44 @@ it('generates nested findings with optional capabilities', function (string $opt
     expect(is_subclass_of($class, $contract))->toBeTrue();
 
     $finding = new $class(new TestModel);
-    expect($finding->$method())->toBe($result);
+    expect(fn () => $finding->$method())->toThrow(
+        LogicException::class,
+        $class.'::'.$method.'() is not implemented. Replace the generated placeholder.',
+    );
 })->with([
-    'detection' => ['detect', CanDetect::class, 'detect', null],
-    'verification' => ['verify', CanVerify::class, 'verify', false],
-    'resolution' => ['resolve', CanResolve::class, 'resolve', false],
+    'detection' => ['detect', CanDetect::class, 'detect'],
+    'verification' => ['verify', CanVerify::class, 'verify'],
+    'resolution' => ['resolve', CanResolve::class, 'resolve'],
 ]);
+
+it('reports unfinished generated detection as a failed command', function () {
+    $this->artisan('health:make:finding', ['name' => 'UnfinishedDetectorFinding'])->assertSuccessful();
+
+    require base_path('app/DataHealth/UnfinishedDetectorFinding.php');
+
+    $this->artisan('health:detect', ['findings' => ['UnfinishedDetectorFinding'], '--no-interaction' => true])
+        ->expectsOutputToContain('UnfinishedDetectorFinding::detect() is not implemented.')
+        ->assertFailed();
+});
+
+it('reports unfinished generated actions without resolving or changing data', function (string $operation) {
+    $this->migrateDataHealthDatabase();
+
+    $name = 'Unfinished'.ucfirst($operation).'Finding';
+    $this->artisan('health:make:finding', ['name' => $name, '--'.$operation => true])->assertSuccessful();
+
+    require base_path('app/DataHealth/'.$name.'.php');
+    $class = 'App\\DataHealth\\'.$name;
+    $model = TestModel::create(['name' => 'Unchanged']);
+    $record = $class::found($model);
+
+    $this->artisan('health:'.$operation, ['id' => $record->id])
+        ->expectsOutputToContain($name.'::'.$operation.'() is not implemented.')
+        ->assertFailed();
+
+    expect($record->refresh()->status)->toBe(RecordStatus::Active)
+        ->and($model->refresh()->name)->toBe('Unchanged');
+})->with(['verify', 'resolve']);
 
 it('generates metadata and infers capabilities required by attributes', function () {
     config()->set('data-health.make_finding.interfaces', []);
@@ -116,7 +148,7 @@ it('generates metadata and infers capabilities required by attributes', function
     ])->assertSuccessful();
 
     require base_path('app/DataHealth/GeneratedCompleteFinding.php');
-    $class = GeneratedCompleteFinding::class;
+    $class = 'App\\DataHealth\\GeneratedCompleteFinding';
     $reflection = new ReflectionClass($class);
 
     expect(class_implements($class))->toContain(CanDetect::class, CanResolve::class, CanVerify::class)
