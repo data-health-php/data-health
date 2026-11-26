@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace DataHealth;
 
 use DataHealth\Console\Commands\DetectCommand;
+use DataHealth\Console\Commands\ExplainCommand;
 use DataHealth\Console\Commands\HealthCommand;
 use DataHealth\Console\Commands\MakeFindingCommand;
 use DataHealth\Console\Commands\RecordsCommand;
@@ -42,6 +43,7 @@ class DataHealthServiceProvider extends ServiceProvider
 
         $this->commands([
             DetectCommand::class,
+            ExplainCommand::class,
             HealthCommand::class,
             MakeFindingCommand::class,
             RecordsCommand::class,

@@ -139,3 +139,16 @@ it('rejects unexpected models without resolving the record', function (string $o
     expect($record->refresh()->status)->toBe(RecordStatus::Active)
         ->and($model->fresh()->status)->toBe('pending');
 })->with(['verify', 'resolve']);
+
+it('explains the documented occurrence using current facts without closing it', function () {
+    $order = TestModel::create(['name' => 'Paid pending', 'paid_at' => now()]);
+    $record = $this->completeFinding::found($order);
+    expect(DataHealth::explain($record)['still_applies'])->toBeTrue();
+
+    $order->update(['status' => 'paid']);
+    $explanation = DataHealth::explain($record);
+
+    expect($explanation['still_applies'])->toBeFalse()
+        ->and($explanation['actual']['status'])->toBe('paid')
+        ->and($record->refresh()->status)->toBe(RecordStatus::Active);
+});

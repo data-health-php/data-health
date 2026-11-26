@@ -10,6 +10,7 @@ use DataHealth\Tests\Fixtures\DataHealth\BasicFinding;
 use DataHealth\Tests\Fixtures\DataHealth\Customers\NestedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\DelayedAutomaticallyVerifiedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\DetectableFinding;
+use DataHealth\Tests\Fixtures\DataHealth\ExplainableFinding;
 use DataHealth\Tests\Fixtures\DataHealth\KeyedFinding;
 use DataHealth\Tests\Fixtures\DataHealth\ScheduledFinding;
 use DataHealth\Tests\Fixtures\DataHealth\Support\Helper;
@@ -30,6 +31,7 @@ it('discovers findings using their default or explicit keys', function () {
         'NestedFinding' => NestedFinding::class,
         'DelayedAutomaticallyVerifiedFinding' => DelayedAutomaticallyVerifiedFinding::class,
         'DetectableFinding' => DetectableFinding::class,
+        'ExplainableFinding' => ExplainableFinding::class,
         'duplicate-customer' => KeyedFinding::class,
         'ScheduledFinding' => ScheduledFinding::class,
         'UrgentFinding' => UrgentFinding::class,
@@ -100,5 +102,5 @@ it('allows the same finding class in overlapping configured directories', functi
         '../../../../tests/Fixtures/DataHealth/Customers' => 'DataHealth\\Tests\\Fixtures\\DataHealth\\Customers',
     ]);
 
-    expect((new FindingRegistry)->all()->all())->toHaveCount(10);
+    expect((new FindingRegistry)->all()->all())->toHaveCount(11);
 });

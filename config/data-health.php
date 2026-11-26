@@ -20,7 +20,7 @@ return [
 
     'make_finding' => [
         // Interfaces and method placeholders included in newly generated findings.
-        // Supported: CanDetect::class, CanVerify::class, and CanResolve::class
+        // Supported: CanDetect::class, CanVerify::class, CanResolve::class, and CanExplain::class
         // from DataHealth\Contracts.
         'interfaces' => [CanDetect::class],
     ],

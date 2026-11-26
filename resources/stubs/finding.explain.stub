@@ -1,0 +1,5 @@
+    /** @return array{expected: string, actual: array<string, mixed>, still_applies: bool, observed_at: string} */
+    public function explain(): array
+    {
+        throw new \LogicException(static::class.'::explain() is not implemented. Replace the generated placeholder.');
+    }

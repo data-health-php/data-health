@@ -59,10 +59,10 @@
             "vendor/bin/pint --parallel --test"
         ],
         "analyse": [
-            "vendor/bin/phpstan analyse"
+            "vendor/bin/phpstan analyse --memory-limit=1G"
         ],
         "test:types": [
-            "vendor/bin/pest --type-coverage --min=100"
+            "vendor/bin/pest --type-coverage --min=100 --memory-limit=1G"
         ],
         "test:unit": [
             "vendor/bin/pest --parallel"

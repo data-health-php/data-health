@@ -6,6 +6,7 @@ namespace DataHealth\Console\Commands;
 
 use Cron\CronExpression;
 use DataHealth\Contracts\CanDetect;
+use DataHealth\Contracts\CanExplain;
 use DataHealth\Contracts\CanResolve;
 use DataHealth\Contracts\CanVerify;
 use DataHealth\Enums\FindingUrgency;
@@ -20,6 +21,7 @@ class MakeFindingCommand extends GeneratorCommand
         {--detect : Add detection logic}
         {--verify : Add verification logic}
         {--resolve : Add resolution logic}
+        {--explain : Add a read-only explanation of current facts}
         {--key= : The stable finding key}
         {--description= : A description of the finding}
         {--urgency= : immediate, soon, normal, or deferred}
@@ -150,6 +152,7 @@ class MakeFindingCommand extends GeneratorCommand
         }
 
         $capabilities = [
+            'explain' => in_array(CanExplain::class, $this->defaultInterfaces, true) || $this->option('explain'),
             'detect' => in_array(CanDetect::class, $this->defaultInterfaces, true) || $this->option('detect') || $this->option('schedule') !== null || $this->option('async'),
             'verify' => in_array(CanVerify::class, $this->defaultInterfaces, true) || $this->option('verify') || $this->option('auto-verify') !== null,
             'resolve' => in_array(CanResolve::class, $this->defaultInterfaces, true) || $this->option('resolve') || $this->option('auto-resolve'),
@@ -199,8 +202,8 @@ class MakeFindingCommand extends GeneratorCommand
         }
 
         foreach ($interfaces as $interface) {
-            if (! in_array($interface, [CanDetect::class, CanVerify::class, CanResolve::class], true)) {
-                throw new InvalidArgumentException('data-health.make_finding.interfaces only supports CanDetect::class, CanVerify::class, and CanResolve::class from DataHealth\\Contracts.');
+            if (! in_array($interface, [CanDetect::class, CanVerify::class, CanResolve::class, CanExplain::class], true)) {
+                throw new InvalidArgumentException('data-health.make_finding.interfaces only supports CanDetect::class, CanVerify::class, CanResolve::class, and CanExplain::class from DataHealth\\Contracts.');
             }
         }
 

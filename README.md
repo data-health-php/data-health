@@ -44,7 +44,7 @@ Start with one inconsistency you already know how to recognize.
 Requires **PHP 8.3+** and **Laravel 12 or 13**. Filament is optional.
 
 ```bash
-composer require data-health/data-health:^0.1
+composer require data-health/data-health:^0.1.1
 php artisan vendor:publish --tag="data-health"
 php artisan migrate
 ```
@@ -128,6 +128,31 @@ and [resolution](https://data-health-php.github.io/data-health-docs/guides/resol
 or [schedule and queue your checks](https://data-health-php.github.io/data-health-docs/guides/scheduling-and-queues/)
 when you are ready to run them regularly.
 
+## Explain a finding
+
+Implement `DataHealth\Contracts\CanExplain` to expose current facts for a single
+occurrence. `explain(): array` returns `expected` (string), `actual` (an array of
+explicitly selected, JSON-serializable fields), `still_applies` (boolean), and
+`observed_at` (an ISO 8601 observation time). Refresh the relevant data and keep
+both business data and the finding status unchanged. Throw when facts cannot be read.
+
+Generate a placeholder with `php artisan health:make:finding Name --explain`.
+Read an explanation through `DataHealth::explain($record)`, inspect a record in the
+interactive console, or run:
+
+```bash
+php artisan health:explain 123
+```
+
+The explanation is computed on demand; it is not stored or included in the context
+hash. A `false` `still_applies` does not close a finding. Use verification to close
+it. Only expose facts appropriate for the audience; an explanation establishes the
+observed inconsistency, not an unproven root cause.
+
+The optional `data-health/data-health-mcp` integration exposes five tools for finding
+types, record lists, details and explanations, verification, and resolution. It runs
+inside the host Laravel application and uses its policies and application resolvers.
+
 ## A dashboard for your team
 
 The optional **[Data Health Filament](https://data-health-php.github.io/data-health-docs/filament/overview/)**
@@ -135,11 +160,10 @@ package adds a Filament 5 interface for searching and filtering findings, inspec
 affected records, assigning work, running bulk actions, and viewing statistics.
 You can also embed its tables in Blade or Livewire views.
 
-It uses the same findings and records as the core package. It is currently
-available on the development branch:
+It uses the same findings and records as the core package. Install the integration for Core 0.1.1 or newer:
 
 ```bash
-composer require data-health/data-health-filament:dev-main
+composer require data-health/data-health-filament:^0.1
 ```
 
 Follow the

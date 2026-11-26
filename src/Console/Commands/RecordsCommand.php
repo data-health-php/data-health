@@ -6,8 +6,10 @@ namespace DataHealth\Console\Commands;
 
 use DataHealth\Console\Concerns\InteractsWithTerminal;
 use DataHealth\Console\Prompts\RecordTablePrompt;
+use DataHealth\Contracts\CanExplain;
 use DataHealth\Contracts\CanResolve;
 use DataHealth\Contracts\CanVerify;
+use DataHealth\DataHealthManager;
 use DataHealth\Enums\RecordStatus;
 use DataHealth\FindingRegistry;
 use DataHealth\Models\FindingRecord;
@@ -246,6 +248,23 @@ class RecordsCommand extends Command
         $record = $records->firstWhere('id', $id);
 
         if ($record !== null) {
+            $description = null;
+            $explanation = null;
+            $explanationError = null;
+
+            try {
+                $class = app(FindingRegistry::class)->getClass($record->key);
+                $description = $class::getDescription();
+
+                if (is_a($class, CanExplain::class, true)) {
+                    $explanation = app(DataHealthManager::class)->explain($record);
+                    json_encode($explanation, JSON_THROW_ON_ERROR);
+                }
+            } catch (Throwable $exception) {
+                $explanation = null;
+                $explanationError = $exception->getMessage();
+            }
+
             $this->line(OutputFormatter::escape(json_encode([
                 'id' => $record->id,
                 'key' => $record->key,
@@ -256,6 +275,9 @@ class RecordsCommand extends Command
                 'worklist' => $record->worklist,
                 'context' => $record->context,
                 'last_detected_at' => $record->last_detected_at->toIso8601String(),
+                'description' => $description,
+                'explanation' => $explanation,
+                'explanation_error' => $explanationError,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)));
         }
     }

@@ -4,7 +4,7 @@ Consult this after designing a finding with the main skill.
 
 ### 1. Install and publish the package
 
-- install with `composer require data-health/data-health:^0.1`
+- install with `composer require data-health/data-health:^0.1.1`
 - publish migrations with `php artisan vendor:publish --tag="data-health-migrations"`
 - run `php artisan migrate`
 - publish configuration with `php artisan vendor:publish --tag="data-health-config"` when application-level overrides are needed
@@ -22,8 +22,8 @@ The command writes to the first configured finding directory and namespace; use
 `--directory=path/to/findings` to select another configured directory. It reports
 the created path and refuses to overwrite an existing file unless `--force` is supplied.
 
-- use `--detect`, `--verify`, and `--resolve` for the corresponding contracts and method placeholders
-- configure `data-health.make_finding.interfaces` with a list of `DataHealth\Contracts\CanDetect::class`, `CanVerify::class`, and/or `CanResolve::class` to choose default contracts and method placeholders; the default is `[CanDetect::class]`
+- use `--detect`, `--verify`, `--resolve`, and `--explain` for the corresponding contracts and method placeholders
+- configure `data-health.make_finding.interfaces` with a list of `DataHealth\Contracts\CanDetect::class`, `CanVerify::class`, `CanResolve::class`, and/or `CanExplain::class` to choose default contracts and method placeholders; the default is `[CanDetect::class]`
 - set the list to `[]` for a plain finding; command options and automatic action attributes add their required capabilities to the configured defaults
 - use `--key=`, `--description=`, `--worklist=`, and `--urgency=immediate|soon|normal|deferred` for class metadata
 - use `--schedule="*/5 * * * *"` to add scheduled detection; `--async` adds `Async` to `detect()` and adds detection capability if needed, without requiring a schedule; optional `--queue=` / `--connection=` set routing
@@ -124,3 +124,12 @@ Run detection manually with `php artisan health:detect`:
 - delete models through Eloquent instances so the model event can delete their linked finding records
 - remember that soft deletes also remove linked findings; run detection again after restoring a model
 
+
+### Explain a current occurrence
+
+- implement `DataHealth\Contracts\CanExplain` with `explain(): array`
+- return `expected` (string), `actual` (JSON-serializable field map), `still_applies` (boolean), and `observed_at` (ISO 8601)
+- refresh relevant data and select audience-appropriate fields; do not serialize whole models
+- use `DataHealth::explain($record)` or `php artisan health:explain ID`; the record browser also includes explanations during inspection
+- reading explanations never changes finding status; unavailable explanations throw, and the browser keeps the record inspectable with an error
+- explanations are computed on demand, not persisted historical evidence and not part of occurrence identity

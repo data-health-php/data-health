@@ -1,6 +1,15 @@
 # Changelog
 
-## [Unreleased](https://github.com/data-health-php/data-health/compare/v0.1.0...HEAD)
+## [Unreleased](https://github.com/data-health-php/data-health/compare/v0.1.1...HEAD)
+
+## [v0.1.1](https://github.com/data-health-php/data-health/compare/v0.1.0...v0.1.1) - 2026-11-26
+
+### Added
+
+- Explain current finding facts through the optional `CanExplain` contract and `DataHealth::explain()` without changing business data or finding status.
+- Read explanations with `health:explain ID` and during interactive record inspection, including unavailable-explanation errors.
+- Generate explanation placeholders with `health:make:finding --explain` or configured default interfaces.
+- Document explanation fields, safe audience-specific facts, and the optional MCP integration in the README and bundled Boost skill.
 
 ## v0.1.0 - 2026-10-26
 

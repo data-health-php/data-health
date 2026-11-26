@@ -3,7 +3,7 @@ name: data-health-development
 description: >
   Design, generate, test, and maintain Data Health findings in Laravel applications.
   Use when scanning application code for data inconsistencies, implementing detection,
-  verification or resolution, or configuring data-health/data-health.
+  verification, explanation or resolution, or configuring data-health/data-health.
 license: MIT
 metadata:
   author: Jascha Gerles
@@ -47,6 +47,11 @@ instead of implementing a speculative rule or correction.
 - `verify(): bool` rechecks this occurrence using `$this->model`, `$this->context`,
   and relevant related data. Keep business data unchanged; do not rerun detection.
   A shared read-only query or predicate is appropriate when it avoids divergent rules.
+- Implement optional `CanExplain::explain(): array` for current, explicitly selected facts.
+  Return `expected` (string), `actual` (JSON-serializable field map), `still_applies`
+  (boolean), and `observed_at` (ISO 8601). Refresh relevant data, preserve business
+  data and finding status, and throw if facts cannot be read. Keep volatile facts
+  outside identity context. Displayed facts must be appropriate for the audience.
 - Assess resolution for every finding. Implement `CanResolve` when application rules
   establish a deterministic correction; otherwise explain the judgment needed and omit it.
 - `resolve(): bool` rechecks current applicability and uses existing domain actions or
@@ -80,7 +85,9 @@ the record. Use the application's existing test setup and mock external systems.
 Read [commands and configuration](references/commands.md) for installation, discovery,
 generation options, scheduling, queues, context, metadata, record actions, and cleanup.
 Use `php artisan health:detect Name -n` for scripted detection and
-`php artisan health` for interactive review. Use package entry points for status updates:
+`php artisan health` for interactive review. Read current facts with `DataHealth::explain($record)` or `php artisan health:explain ID`;
+record inspection also displays explanations. Explanations do not change status.
+Use package entry points for status updates:
 `DataHealth::verify($record)` and `DataHealth::resolve($record)`; direct method calls
 only run application logic. Capabilities are independent, and application code may
 report `Name::found($model)` without implementing detection.
@@ -107,12 +114,13 @@ namespace App\DataHealth;
 
 use App\Models\Order;
 use DataHealth\Contracts\CanDetect;
+use DataHealth\Contracts\CanExplain;
 use DataHealth\Contracts\CanResolve;
 use DataHealth\Contracts\CanVerify;
 use DataHealth\Finding;
 use Illuminate\Support\Facades\DB;
 
-class PaidOrderMarkedPending extends Finding implements CanDetect, CanVerify, CanResolve
+class PaidOrderMarkedPending extends Finding implements CanDetect, CanVerify, CanResolve, CanExplain
 {
     public static function detect(): null
     {
@@ -122,6 +130,26 @@ class PaidOrderMarkedPending extends Finding implements CanDetect, CanVerify, Ca
             ->eachById(fn (Order $order) => self::found($order));
 
         return null;
+    }
+
+    public function explain(): array
+    {
+        $order = $this->model->refresh();
+
+        if (! $order instanceof Order) {
+            throw new \LogicException('Expected an Order model.');
+        }
+
+        return [
+            'expected' => 'An order with a payment timestamp must not remain pending.',
+            'actual' => [
+                'order_id' => $order->getKey(),
+                'paid_at' => $order->getRawOriginal('paid_at'),
+                'status' => $order->status,
+            ],
+            'still_applies' => $order->paid_at !== null && $order->status === 'pending',
+            'observed_at' => now()->toIso8601String(),
+        ];
     }
 
     public function verify(): bool

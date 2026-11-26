@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace DataHealth;
 
+use DataHealth\Contracts\CanExplain;
 use DataHealth\Contracts\CanResolve;
 use DataHealth\Contracts\CanVerify;
 use DataHealth\Contracts\Resolver;
@@ -79,6 +80,18 @@ class DataHealthManager
         return tap($record)->update([
             'last_detected_at' => $detectedAt,
         ]);
+    }
+
+    /** @return array{expected: string, actual: array<string, mixed>, still_applies: bool, observed_at: string} */
+    public function explain(FindingRecord $record): array
+    {
+        $finding = $this->getFindingForRecord($record);
+
+        if (! $finding instanceof CanExplain) {
+            throw new RuntimeException($finding::class.' does not implement CanExplain');
+        }
+
+        return $finding->explain();
     }
 
     public function resolve(FindingRecord $record): bool

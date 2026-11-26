@@ -7,6 +7,7 @@ use DataHealth\Attributes\AutoResolve;
 use DataHealth\Attributes\AutoVerify;
 use DataHealth\Attributes\Scheduled;
 use DataHealth\Contracts\CanDetect;
+use DataHealth\Contracts\CanExplain;
 use DataHealth\Contracts\CanResolve;
 use DataHealth\Contracts\CanVerify;
 use DataHealth\Enums\FindingUrgency;
@@ -52,13 +53,14 @@ it('generates the configured default interfaces and methods', function (array $i
 
     expect(array_values(class_implements($class)))->toEqualCanonicalizing($interfaces);
 
-    foreach ([CanDetect::class => 'detect', CanVerify::class => 'verify', CanResolve::class => 'resolve'] as $interface => $method) {
+    foreach ([CanDetect::class => 'detect', CanVerify::class => 'verify', CanResolve::class => 'resolve', CanExplain::class => 'explain'] as $interface => $method) {
         expect(method_exists($class, $method))->toBe(in_array($interface, $interfaces, true));
     }
 })->with([
     'no interfaces' => [[]],
     'verification only' => [[CanVerify::class]],
     'resolution only' => [[CanResolve::class]],
+    'explanation only' => [[CanExplain::class]],
     'all interfaces' => [[CanDetect::class, CanVerify::class, CanResolve::class]],
 ]);
 
@@ -98,6 +100,7 @@ it('generates nested findings whose unfinished capabilities throw', function (st
     'detection' => ['detect', CanDetect::class, 'detect'],
     'verification' => ['verify', CanVerify::class, 'verify'],
     'resolution' => ['resolve', CanResolve::class, 'resolve'],
+    'explanation' => ['explain', CanExplain::class, 'explain'],
 ]);
 
 it('reports unfinished generated detection as a failed command', function () {
